@@ -4,15 +4,21 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo start --android --port 8083",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~55.0.2",
+    "@expo/vector-icons": "^15.0.2",
+    "@supabase/supabase-js": "^2.98.0",
+    "expo": "~55.0.3",
+    "expo-font": "^55.0.4",
     "expo-status-bar": "~55.0.4",
     "react": "19.2.0",
-    "react-native": "0.83.2"
+    "react-native": "0.83.2",
+    "react-native-maps": "1.26.20",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-url-polyfill": "^3.0.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
