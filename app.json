@@ -30,7 +30,7 @@
       ],
       [
         "@rnmapbox/maps",
-        { "RNMapboxMapsDownloadToken": "SET_IN_EAS_SECRETS" }
+        { "RNMapboxMapsVersion": "11.8.0" }
       ]
     ],
     "extra": {
