@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #B9702F; text-decoration: none; } a:hover { color: #8F521C; }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 390px; height: 844px; background: #FCF6EE; color: #2B1D12; overflow: hidden;">
+
+  <div style="position: absolute; top: 0; left: 0; right: 0; padding: 56px 20px 14px; background: #FCF6EE; display: flex; align-items: center; gap: 12px; z-index: 2;">
+    <div style="width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; border: 1px solid #EBDFD0; display: flex; align-items: center; justify-content: center; color: #2B1D12;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </div>
+    <h1 style="margin: 0; flex-grow: 1; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 20px; font-weight: 700;">Notificações</h1>
+    <span style="font-size: 12.5px; font-weight: 600; color: #B9702F;">Marcar todas como lidas</span>
+  </div>
+
+  <div style="position: absolute; top: 114px; left: 0; right: 0; bottom: 0; padding: 6px 20px 16px; display: flex; flex-direction: column; gap: 8px; overflow: hidden;">
+
+    <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #A08F7C; padding: 8px 2px 2px;">Hoje</span>
+
+    <div style="background: #FBECDA; border-radius: 18px; padding: 14px 15px; display: flex; gap: 12px; align-items: flex-start;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: #C1452F; color: #FFF7EC; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5v6"/><path d="M12 17h.01"/></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 14px; line-height: 1.4; color: #40301F;"><strong style="font-weight: 700;">Praça da Matriz</strong> está há 6 h sem registro. Você costuma passar por lá de manhã.</span>
+        <span style="font-size: 12px; color: #8F521C; font-weight: 600;">há 20 min</span>
+      </div>
+      <span style="width: 9px; height: 9px; border-radius: 999px; background: #C1452F; flex-shrink: 0; margin-top: 6px;"></span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; padding: 14px 15px; display: flex; gap: 12px; align-items: flex-start;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: #EFE0CD; color: #8F521C; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700; flex-shrink: 0;">RS</div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 14px; line-height: 1.4; color: #40301F;"><strong style="font-weight: 700;">Rafael S.</strong> pediu ajuda para cobrir o <strong style="font-weight: 700;">Viaduto da Rodoviária</strong> na quinta.</span>
+        <span style="font-size: 12px; color: #A08F7C;">há 2 h</span>
+      </div>
+      <span style="width: 9px; height: 9px; border-radius: 999px; background: #C1452F; flex-shrink: 0; margin-top: 6px;"></span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; padding: 14px 15px; display: flex; gap: 12px; align-items: flex-start;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: #E4EFE7; color: #2F6B48; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 14px; line-height: 1.4; color: #40301F;"><strong style="font-weight: 700;">Marina C.</strong> alimentou a Praça da Matriz. Ração seca, 4 gatos.</span>
+        <span style="font-size: 12px; color: #A08F7C;">há 6 h</span>
+      </div>
+      <span style="width: 9px; height: 9px; border-radius: 999px; background: #C1452F; flex-shrink: 0; margin-top: 6px;"></span>
+    </div>
+
+    <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #A08F7C; padding: 14px 2px 2px;">Esta semana</span>
+
+    <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; padding: 14px 15px; display: flex; gap: 12px; align-items: flex-start;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: #FBECDA; color: #B9702F; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 5.5H5.5A2.5 2.5 0 0 0 8 10"/><path d="M16 5.5h2.5A2.5 2.5 0 0 1 16 10"/><path d="M12 13v4"/><path d="M9 20h6l-.7-3h-4.6L9 20Z"/></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 14px; line-height: 1.4; color: #40301F;">Você subiu para o <strong style="font-weight: 700;">12º lugar</strong> no ranking do mês.</span>
+        <span style="font-size: 12px; color: #A08F7C;">terça</span>
+      </div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; padding: 14px 15px; display: flex; gap: 12px; align-items: flex-start;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: #F0E7DC; color: #6B5645; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700; flex-shrink: 0;">JP</div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 14px; line-height: 1.4; color: #40301F;"><strong style="font-weight: 700;">João P.</strong> comentou no seu registro: “A Nina já está bem mais confiante”.</span>
+        <span style="font-size: 12px; color: #A08F7C;">segunda</span>
+      </div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; padding: 14px 15px; display: flex; gap: 12px; align-items: flex-start;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: #F2EDE5; color: #6B5645; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 14px; line-height: 1.4; color: #40301F;">Um novo ponto foi criado a 400 m de você: <strong style="font-weight: 700;">Estacionamento do Mercado</strong>.</span>
+        <span style="font-size: 12px; color: #A08F7C;">domingo</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

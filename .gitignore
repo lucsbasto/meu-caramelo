@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# expo
+.expo/
+dist/
+web-build/
+*.orig.*
+
+# native
+ios/
+android/
+!ios/.gitkeep
+
+# env / secrets
+.env
+.env*.local
+
+# supabase local
+supabase/.branches/
+supabase/.temp/
+
+# os / editor
+.DS_Store
+Thumbs.db
+
+# omc operational state (committable exception: .omc/skills/**)
+.omc/
+!.omc/skills/
+!.omc/skills/**
+
+# logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*

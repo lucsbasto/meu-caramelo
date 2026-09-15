@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #B9702F; text-decoration: none; } a:hover { color: #8F521C; }
+    .celula { padding: 13px 14px; font-size: 12.5px; line-height: 1.4; vertical-align: top; border-top: 1px solid #EFE6DA; color: #40301F; }
+    .cabeca { padding: 10px 14px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #A08F7C; text-align: left; }
+  </style>
+</helmet>
+
+<div style="width: 800px; height: 900px; background: #FCF6EE; color: #2B1D12; overflow: hidden; padding: 34px 36px; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 27px; font-weight: 700; letter-spacing: -0.4px;">Vários patrocinadores no mesmo app</h1>
+    <p style="margin: 0; max-width: 620px; font-size: 14px; line-height: 1.5; color: #6B5645;">O modelo do Waze funciona porque o patrocínio ocupa espaços fixos e escassos, não o mapa inteiro. Aqui é a mesma lógica: três níveis, seis espaços, e um teto em cada um. Vender é encaixar a marca num nível — nunca criar um espaço novo.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+    <div style="background: #FFFFFF; border: 1.5px solid #CFE0D4; border-radius: 18px; padding: 16px 17px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="width: 34px; height: 34px; border-radius: 10px; background: #2F6B48; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7.5 7 11l5-6.5L17 11l4-3.5-1.8 10.2a1.2 1.2 0 0 1-1.2 1H6a1.2 1.2 0 0 1-1.2-1L3 7.5Z"/></svg>
+        </div>
+        <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 16px; font-weight: 700;">Mantenedor da cidade</span>
+      </div>
+      <span style="font-size: 12.5px; font-weight: 700; color: #2F6B48;">1 vaga por cidade</span>
+      <span style="font-size: 12.5px; line-height: 1.45; color: #6B5645;">Pin no mapa, meta do bairro com o nome dela, topo da tela Quem apoia e splash. É a única marca que aparece dentro do fluxo de alimentar.</span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; padding: 16px 17px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="width: 34px; height: 34px; border-radius: 10px; background: #35617F; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </div>
+        <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 16px; font-weight: 700;">Apoiador</span>
+      </div>
+      <span style="font-size: 12.5px; font-weight: 700; color: #35617F;">até 4 vagas</span>
+      <span style="font-size: 12.5px; line-height: 1.45; color: #6B5645;">Pin no mapa nos endereços reais, linha na tela Quem apoia e entra no rodízio da meta do bairro. Sem espaço no mapa quando o filtro está desligado.</span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; padding: 16px 17px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="width: 34px; height: 34px; border-radius: 10px; background: #B9702F; color: #FFF7EC; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+        </div>
+        <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 16px; font-weight: 700;">Parceiro local</span>
+      </div>
+      <span style="font-size: 12.5px; font-weight: 700; color: #B9702F;">sem limite</span>
+      <span style="font-size: 12.5px; line-height: 1.45; color: #6B5645;">Só chip na tela Quem apoia e no rodapé do perfil. É a porta de entrada barata do pet shop da esquina — e o que dá volume de receita.</span>
+    </div>
+  </div>
+
+  <div style="background: #FFFFFF; border: 1px solid #EBDFD0; border-radius: 18px; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background: #F7F3EC;">
+          <th class="cabeca" style="width: 22%;">Espaço</th>
+          <th class="cabeca" style="width: 16%;">Quantos ao mesmo tempo</th>
+          <th class="cabeca" style="width: 28%;">Como rotaciona</th>
+          <th class="cabeca" style="width: 34%;">Regra que protege o app</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="celula" style="font-weight: 700;">Pin no mapa</td>
+          <td class="celula">Todos os endereços reais das marcas</td>
+          <td class="celula">Não rotaciona — é lugar físico, aparece quem está por perto</td>
+          <td class="celula">Pin quadrado, nunca redondo: não pode ser confundido com ponto de alimentação. O usuário desliga a camada num toque.</td>
+        </tr>
+        <tr>
+          <td class="celula" style="font-weight: 700;">Folha do apoiador</td>
+          <td class="celula">1 — a que o usuário tocou</td>
+          <td class="celula">Só abre no toque, nunca sozinha</td>
+          <td class="celula">Botão escuro, nunca caramelo: a cor do "Alimentar" não é vendida.</td>
+        </tr>
+        <tr>
+          <td class="celula" style="font-weight: 700;">Meta do bairro</td>
+          <td class="celula">1 por bairro, por semana</td>
+          <td class="celula">Rodízio semanal entre mantenedor e apoiadores</td>
+          <td class="celula">A barra mostra o que foi entregue. Marca que não cumpre sai do rodízio.</td>
+        </tr>
+        <tr>
+          <td class="celula" style="font-weight: 700;">Tela "Quem apoia"</td>
+          <td class="celula">Todos</td>
+          <td class="celula">Ordenada por contribuição, nunca por quanto pagou</td>
+          <td class="celula">Números auditáveis: kg, castrações, pontos atendidos.</td>
+        </tr>
+        <tr>
+          <td class="celula" style="font-weight: 700;">Rodapé do perfil</td>
+          <td class="celula">Faixa com todos os logos</td>
+          <td class="celula">Estática</td>
+          <td class="celula">Fora do caminho de qualquer tarefa.</td>
+        </tr>
+        <tr>
+          <td class="celula" style="font-weight: 700;">Splash de abertura</td>
+          <td class="celula">1 por semana</td>
+          <td class="celula">Rodízio semanal, só mantenedor e apoiadores</td>
+          <td class="celula">1,5 s, sem botão, sem bloquear o mapa. Se o app abriu por notificação de urgência, não aparece.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="background: #FBECDA; border: 1.5px solid #E8C89C; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 9px;">
+    <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 15.5px; font-weight: 700; color: #40301F;">As quatro linhas que não se cruzam</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 22px;">
+      <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.4; color: #40301F;"><span style="color: #B9702F; font-weight: 700;">1.</span>Patrocínio nunca muda quais pontos aparecem nem a ordem deles.</div>
+      <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.4; color: #40301F;"><span style="color: #B9702F; font-weight: 700;">2.</span>Nenhuma marca entra em alerta de ponto sem comida.</div>
+      <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.4; color: #40301F;"><span style="color: #B9702F; font-weight: 700;">3.</span>A camada de apoiadores é desligável e fica desligada se o usuário desligar.</div>
+      <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.4; color: #40301F;"><span style="color: #B9702F; font-weight: 700;">4.</span>Nenhum dado pessoal de voluntário vai para patrocinador — só números agregados.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

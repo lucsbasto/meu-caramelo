@@ -1,0 +1,211 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Fluxo do app"
+    },
+    {
+      "id": "page-2",
+      "name": "Patrocínio (modelo Waze)"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Onboarding.dc.html",
+      "title": "1 · Onboarding",
+      "page": "page-1",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "2 · Mapa",
+      "page": "page-1",
+      "x": 500,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "PontoDetalhe.dc.html",
+      "title": "3 · Detalhe do ponto",
+      "page": "page-1",
+      "x": 1000,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "PontoOrfao.dc.html",
+      "title": "4 · Ponto sem mantenedor",
+      "page": "page-1",
+      "x": 1500,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Registrar.dc.html",
+      "title": "5 · Registrar alimentação",
+      "page": "page-1",
+      "x": 0,
+      "y": 1000,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Feed.dc.html",
+      "title": "6 · Feed da comunidade",
+      "page": "page-1",
+      "x": 500,
+      "y": 1000,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Ranking.dc.html",
+      "title": "7 · Ranking",
+      "page": "page-1",
+      "x": 1000,
+      "y": 1000,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Conquistas.dc.html",
+      "title": "8 · Conquistas",
+      "page": "page-1",
+      "x": 1500,
+      "y": 1000,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Perfil.dc.html",
+      "title": "9 · Perfil",
+      "page": "page-1",
+      "x": 0,
+      "y": 2000,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Notificacoes.dc.html",
+      "title": "10 · Notificações",
+      "page": "page-1",
+      "x": 500,
+      "y": 2000,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "PatMapa.dc.html",
+      "title": "P1 · Mapa com apoiadores",
+      "page": "page-2",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "PatCard.dc.html",
+      "title": "P2 · Folha do apoiador",
+      "page": "page-2",
+      "x": 500,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "PatMissao.dc.html",
+      "title": "P3 · Meta do bairro",
+      "page": "page-2",
+      "x": 1000,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "PatApoiadores.dc.html",
+      "title": "P4 · Quem apoia",
+      "page": "page-2",
+      "x": 1500,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "PatInventario.dc.html",
+      "title": "P5 · Vagas e rodízio",
+      "page": "page-2",
+      "x": 2000,
+      "y": 0,
+      "w": 800,
+      "h": 900
+    }
+  ],
+  "annotations": [
+    {
+      "id": "nota-fluxo",
+      "page": "page-1",
+      "x": 2070,
+      "y": 0,
+      "w": 360,
+      "text": "Fluxo principal\n\nEntrada → mapa → ponto → registro.\nO mapa é a tela inicial: abre direto na localização, sem dashboard antes.\n\nO botão + do tab bar é o atalho de registro rápido para quem já está no ponto."
+    },
+    {
+      "id": "nota-mapa",
+      "page": "page-1",
+      "x": 2070,
+      "y": 320,
+      "w": 360,
+      "text": "Sobre o mapa\n\nO grid de ruas aqui é desenhado à mão só como referência: o preview do canvas não faz requisição de rede, então nenhum tile carrega.\n\nO mapa real vai junto, fora do canvas:\n· estilo-caramelo.json — style Mapbox nesta paleta\n· mapa-preview.html — abre no navegador com seu token\n· MapaScreen.tsx — @rnmapbox/maps + Supabase realtime\n\nPins: verde = ok hoje (< 4 h), caramelo = precisa hoje (4-12 h), vermelho = urgente (> 12 h sem registro). O filtro \"Precisa hoje\" cobre caramelo + vermelho."
+    },
+    {
+      "id": "nota-mantenedor",
+      "page": "page-1",
+      "x": 2070,
+      "y": 740,
+      "w": 360,
+      "text": "Mantenedor do ponto\n\nUm mantenedor principal + co-mantenedores. Quem cria o ponto já vira mantenedor; ponto sem dono mostra \"Adotar este ponto\" (artboard 4).\n\nPoderes no MVP: editar nome, endereço e fotos; corrigir ou remover registro errado; convidar co-mantenedores.\n\nA coroa escura no avatar é a marca visual de mantenedor — aparece no detalhe do ponto e no perfil.\n\nAnimais fixos ficaram fora do MVP: a contagem de animais agora é por registro (\"4 gatos · 2 cães\"), não um cadastro do ponto."
+    },
+    {
+      "id": "nota-comunidade",
+      "page": "page-1",
+      "x": 2070,
+      "y": 1120,
+      "w": 360,
+      "text": "Comunidade e ranking\n\nO feed mistura três tipos de card: registro normal, pedido de ajuda (faixa vermelha no topo, com CTA \"Quero cobrir\") e evento curto de uma linha.\n\nO ranking existe para cobrir buracos de agenda, não para competir — por isso o card do usuário mostra o que falta para o próximo degrau."
+    },
+    {
+      "id": "nota-conquistas",
+      "page": "page-1",
+      "x": 2070,
+      "y": 1440,
+      "w": 360,
+      "text": "Conquistas (artboard 8)\n\nTrês eixos, 3 conquistas cada:\n· Constância — Primeira tigela, Rotina 7 dias, Sentinela 30 dias\n· Cuidado — Nunca sem água, Relato completo, Olho atento\n· Comunidade — Deu cobertura, Mantenedor, Guardião do bairro\n\nToda conquista é derivada de evento que o app já grava (registro, foto, água, cobertura, adoção de ponto) — nenhuma precisa de tabela nova além de uma view de contagem.\n\nBloqueada mostra progresso, nunca só um cadeado: o número é o que puxa de volta."
+    },
+    {
+      "id": "nota-sistema",
+      "page": "page-1",
+      "x": 2070,
+      "y": 1820,
+      "w": 360,
+      "text": "Sistema visual\n\nFundo #FCF6EE · superfície #FFFFFF · borda #EBDFD0\nTexto #2B1D12 · secundário #6B5645 · terciário #8A7460 · fraco #A08F7C\nSobre escuro/caramelo: #FFF7EC\n\nCaramelo #B9702F (pressionado #8F521C) · verde #3E8F5E (par claro #E4EFE7/#2F6B48) · alerta #C1452F (par claro #F9E7E2)\n\nTipografia: Bricolage Grotesque (títulos) + Instrument Sans (texto).\nRaios: 12 controles · 16-20 cartões · 22-26 folhas · 999 pílulas.\n\nAlvos de toque: 44 px em botões, linhas e itens do tab bar; 40 px nos chips de filtro.\n\nSem barra de status nem teclado falsos — esse espaço fica para o sistema."
+    },
+    {
+      "id": "nota-patrocinio",
+      "page": "page-2",
+      "x": 2900,
+      "y": 0,
+      "w": 380,
+      "text": "Patrocínio do app, vários patrocinadores\n\nO modelo do Waze traduzido: a marca aparece onde ela é um lugar físico útil (pin), e o resto é espaço fixo e escasso.\n\nP1 · Pin quadrado, branco com borda da marca — nunca redondo, para não competir com ponto de alimentação. Tem botão próprio para ligar/desligar a camada.\nP2 · Folha do apoiador ao tocar no pin: o que a loja oferece ao voluntário, quanto já doou, CTA escuro (a cor caramelo do \"Alimentar\" não se vende).\nP3 · Meta do bairro — a peça mais forte: o patrocínio vira ação coletiva (\"a cada 100 registros, 50 kg doados\"). Uma por bairro por semana, em rodízio entre as marcas.\nP4 · Quem apoia: três níveis, ordenados por contribuição e não por preço.\nP5 · A tabela de vagas e rodízio — é o que permite vender para várias marcas sem entupir o app.\n\nAs marcas Boa Pata, Vet Aurora, Mercado São Jorge, Pet Shop Rex e Padaria Central são fictícias, só para ver o peso visual.\n\nAs opções A/B/C da versão anterior saíram: eram patrocínio POR PONTO, e o modelo agora é do app inteiro. Ficaram em arquivo/ se quiser resgatar a ideia da barra de entrega — ela sobreviveu no card do apoiador (P2) e na meta do bairro (P3)."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-2"
+  }
+}
