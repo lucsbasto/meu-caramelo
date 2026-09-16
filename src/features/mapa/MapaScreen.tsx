@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -11,7 +11,7 @@ import Mapbox, {
   UserLocation,
 } from '@rnmapbox/maps';
 
-import { colors, fonts, spacing } from '@/theme';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import estiloCaramelo from './estilo-caramelo.json';
 import { FiltroChips } from './FiltroChips';
 import { PontoSheet } from './PontoSheet';
@@ -87,12 +87,31 @@ export default function MapaScreen() {
     setSelecionado(p);
   }
 
+  // Toque longo no mapa cria um ponto já com a coordenada pronta (§6.6).
+  function onLongPress(e: { geometry: { coordinates: number[] } }) {
+    const [lng, lat] = e.geometry.coordinates;
+    router.push({
+      pathname: '/ponto/novo',
+      params: { lat: String(lat), lng: String(lng) },
+    });
+  }
+
+  // Estado vazio vira CTA para cadastrar o primeiro ponto (§6.6 Como se chega).
+  function onCadastrarPrimeiro() {
+    const c = centro ?? CENTRO_PADRAO;
+    router.push({
+      pathname: '/ponto/novo',
+      params: { lat: String(c.lat), lng: String(c.lng) },
+    });
+  }
+
   return (
     <View style={styles.container}>
       <MapView
         style={styles.mapa}
         styleJSON={ESTILO_JSON}
         scaleBarEnabled={false}
+        onLongPress={onLongPress}
       >
         {centro && (
           <Camera
@@ -144,6 +163,13 @@ export default function MapaScreen() {
       {!isLoading && !isError && visiveis.length === 0 && (
         <View style={styles.avisoVazio}>
           <Text style={styles.avisoTexto}>Nenhum ponto por aqui ainda.</Text>
+          <Pressable
+            onPress={onCadastrarPrimeiro}
+            style={({ pressed }) => [styles.ctaVazio, pressed && styles.ctaVazioPressed]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.ctaVazioTexto}>Cadastrar o primeiro ponto</Text>
+          </Pressable>
         </View>
       )}
 
@@ -196,5 +222,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  ctaVazio: {
+    minHeight: touch.min,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.control,
+    backgroundColor: colors.caramelo,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaVazioPressed: { backgroundColor: colors.carameloPressed },
+  ctaVazioTexto: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.onDark,
   },
 });

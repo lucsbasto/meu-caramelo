@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, radii, touch, fonts } from '@/theme';
@@ -20,6 +21,7 @@ import type { Tables } from '@/lib/database.types';
 import { useAuth } from '@/features/auth/session';
 import { abbreviateName } from '@/features/auth/abbreviate';
 import { LoginWall } from '@/features/auth/LoginWall';
+import { useMeusPontos, type PontoDaLista } from '@/features/ponto/useEditorPonto';
 
 type Profile = Tables<'profiles'>;
 
@@ -122,8 +124,82 @@ function SignedInProfile({ userId }: { userId: string }) {
           <Stat value={0} label="pontos mantidos" />
           <Stat value={0} label="dias seguidos" highlight />
         </View>
+
+        {/* Meus pontos: pontos mantidos, cada um leva à edição (§6.6). */}
+        <MeusPontos userId={userId} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function MeusPontos({ userId }: { userId: string }) {
+  const router = useRouter();
+  const { data: pontos, isLoading, isError } = useMeusPontos(userId);
+
+  return (
+    <View style={styles.pontosSection}>
+      <View style={styles.pontosHeader}>
+        <Text style={styles.pontosTitle}>Meus pontos</Text>
+        <Pressable
+          onPress={() => router.push('/ponto/novo')}
+          hitSlop={8}
+          style={styles.pontosNovoBtn}
+        >
+          <Text style={styles.pontosNovoLabel}>+ Novo</Text>
+        </Pressable>
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.md }} />
+      ) : isError ? (
+        <Text style={styles.pontosErro}>Não deu para carregar seus pontos.</Text>
+      ) : !pontos || pontos.length === 0 ? (
+        // Perfil novo: convite, sem culpa (§6.12 Estados).
+        <View style={styles.inviteCard}>
+          <Text style={styles.inviteText}>
+            Você ainda não mantém nenhum ponto. Cadastrar um ponto perto de você
+            ajuda o bairro a não ficar sem cobertura.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.pontosLista}>
+          {pontos.map((p) => (
+            <LinhaPonto
+              key={p.id}
+              ponto={p}
+              onPress={() => router.push(`/ponto/${p.id}/editar`)}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function LinhaPonto({
+  ponto,
+  onPress,
+}: {
+  ponto: PontoDaLista;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.pontoLinha, pressed && styles.pontoLinhaPressed]}
+      accessibilityRole="button"
+    >
+      <View style={styles.pontoInfo}>
+        <Text style={styles.pontoNome}>{ponto.nome}</Text>
+        {ponto.endereco ? (
+          <Text style={styles.pontoEndereco} numberOfLines={1}>
+            {ponto.endereco}
+          </Text>
+        ) : null}
+        {!ponto.ativo && <Text style={styles.pontoInativo}>Desativado</Text>}
+      </View>
+      <Text style={styles.pontoSeta}>›</Text>
+    </Pressable>
   );
 }
 
@@ -403,4 +479,50 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
   },
   disabled: { opacity: 0.5 },
+
+  pontosSection: { gap: spacing.md },
+  pontosHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pontosTitle: { fontFamily: fonts.title, fontSize: 18, color: colors.text },
+  pontosNovoBtn: {
+    minHeight: touch.min,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  pontosNovoLabel: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
+  pontosErro: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.alerta,
+  },
+  pontosLista: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.card,
+    overflow: 'hidden',
+  },
+  pontoLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  pontoLinhaPressed: { backgroundColor: colors.bg },
+  pontoInfo: { flex: 1, gap: 2 },
+  pontoNome: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.text },
+  pontoEndereco: { fontFamily: fonts.body, fontSize: 13, color: colors.textTertiary },
+  pontoInativo: { fontFamily: fonts.body, fontSize: 12, color: colors.alerta },
+  pontoSeta: { fontFamily: fonts.body, fontSize: 22, color: colors.textWeak },
 });

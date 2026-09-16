@@ -20,6 +20,8 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="ponto/[id]/index" />
+            <Stack.Screen name="ponto/novo" />
+            <Stack.Screen name="ponto/[id]/editar" />
             {/* Login empilhado como card/modal (§6.2). */}
             <Stack.Screen name="login" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth-callback" />

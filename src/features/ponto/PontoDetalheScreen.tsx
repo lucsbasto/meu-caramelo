@@ -164,7 +164,7 @@ export function PontoDetalheScreen({ id }: Props) {
                 mantenedores={mantenedores.data ?? []}
                 usuarioId={user?.id ?? null}
                 onPress={emBreve}
-                onEditar={emBreve}
+                onEditar={() => router.push(`/ponto/${id}/editar`)}
               />
             )
           ) : (
@@ -355,8 +355,10 @@ function CartaoMantenedor({
   const principal = mantenedores.find((m) => m.papel === 'principal') ?? mantenedores[0];
   if (!principal) return null;
 
-  // "Você" e o botão editar são do principal, não de qualquer co-mantenedor
+  // "Você" é do principal; já editar pode qualquer mantenedor/co-mantenedor (§6.6).
   const souOPrincipal = usuarioId != null && principal.userId === usuarioId;
+  const souMantenedor =
+    usuarioId != null && mantenedores.some((m) => m.userId === usuarioId);
   const coMantenedores = mantenedores.filter((m) => m.userId !== principal.userId);
   const nomeExibido = souOPrincipal ? 'Você' : abbreviateName(principal.nome);
 
@@ -381,7 +383,7 @@ function CartaoMantenedor({
         </Text>
       </View>
 
-      {souOPrincipal ? (
+      {souMantenedor ? (
         <Pressable
           onPress={onEditar}
           hitSlop={8}
