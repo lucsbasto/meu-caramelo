@@ -26,6 +26,9 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-secure-store',
+    'expo-web-browser',
+    // Login social nativo do Google (WP3). Lê os client ids via env.
+    '@react-native-google-signin/google-signin',
     [
       'expo-location',
       { locationWhenInUsePermission: 'Mostrar pontos perto de você.' },
@@ -45,6 +48,8 @@ const config: ExpoConfig = {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
     mapboxPublicToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '',
+    googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
+    googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '',
   },
 };
 
