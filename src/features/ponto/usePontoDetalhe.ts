@@ -1,0 +1,179 @@
+// Queries do detalhe do ponto (§6.4) + realtime: INSERT/DELETE em `registros`
+// filtrado por ponto_id invalida as três listas que dependem dele.
+import { useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import {
+  normalizarPontoDetalhe,
+  type EstatisticasMes,
+  type Mantenedor,
+  type PontoDetalhe,
+  type RegistroPonto,
+} from './dados';
+
+const QTD_REGISTROS_TELA = 3;
+
+function chavePonto(id: string) {
+  return ['ponto', id] as const;
+}
+function chaveMantenedores(id: string) {
+  return ['ponto', id, 'mantenedores'] as const;
+}
+function chaveRegistros(id: string) {
+  return ['ponto', id, 'registros'] as const;
+}
+function chaveEstatisticas(id: string) {
+  return ['ponto', id, 'estatisticas'] as const;
+}
+
+async function buscarPonto(id: string): Promise<PontoDetalhe | null> {
+  const { data, error } = await supabase
+    .from('pontos_com_status')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? normalizarPontoDetalhe(data) : null;
+}
+
+async function buscarMantenedores(id: string): Promise<Mantenedor[]> {
+  const { data, error } = await supabase
+    .from('ponto_mantenedores')
+    .select('user_id, papel, criado_em, profiles(nome, avatar_url)')
+    .eq('ponto_id', id)
+    .order('criado_em', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((m) => ({
+    userId: m.user_id,
+    papel: m.papel,
+    criadoEm: m.criado_em,
+    nome: m.profiles?.nome ?? 'Vizinho',
+    avatarUrl: m.profiles?.avatar_url ?? null,
+  }));
+}
+
+async function buscarRegistros(id: string): Promise<RegistroPonto[]> {
+  const { data, error } = await supabase
+    .from('registros')
+    .select(
+      'id, user_id, criado_em, caes, gatos, quantidade_kg, observacao, tipos, profiles(nome, avatar_url)'
+    )
+    .eq('ponto_id', id)
+    .order('criado_em', { ascending: false })
+    .limit(QTD_REGISTROS_TELA);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    userId: r.user_id,
+    criadoEm: r.criado_em,
+    caes: r.caes,
+    gatos: r.gatos,
+    quantidadeKg: r.quantidade_kg,
+    observacao: r.observacao,
+    tipos: r.tipos ?? [],
+    autorNome: r.profiles?.nome ?? 'Vizinho',
+    autorAvatarUrl: r.profiles?.avatar_url ?? null,
+  }));
+}
+
+// Agregados do mês contados no cliente — volume do piloto é pequeno
+// (instrução do WP), então não há RPC dedicada ainda.
+async function buscarEstatisticasMes(id: string): Promise<EstatisticasMes> {
+  const inicioMes = new Date();
+  inicioMes.setDate(1);
+  inicioMes.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from('registros')
+    .select('user_id')
+    .eq('ponto_id', id)
+    .gte('criado_em', inicioMes.toISOString());
+  if (error) throw error;
+
+  const linhas = data ?? [];
+  const voluntarios = new Set(linhas.map((r) => r.user_id)).size;
+  return { totalRegistros: linhas.length, voluntarios };
+}
+
+export function usePontoDetalhe(id: string | undefined) {
+  const queryClient = useQueryClient();
+
+  const ponto = useQuery({
+    queryKey: id ? chavePonto(id) : ['ponto', 'sem-id'],
+    queryFn: () => buscarPonto(id as string),
+    enabled: id != null,
+  });
+  const mantenedores = useQuery({
+    queryKey: id ? chaveMantenedores(id) : ['ponto', 'sem-id', 'mantenedores'],
+    queryFn: () => buscarMantenedores(id as string),
+    enabled: id != null,
+  });
+  const registros = useQuery({
+    queryKey: id ? chaveRegistros(id) : ['ponto', 'sem-id', 'registros'],
+    queryFn: () => buscarRegistros(id as string),
+    enabled: id != null,
+  });
+  const estatisticas = useQuery({
+    queryKey: id ? chaveEstatisticas(id) : ['ponto', 'sem-id', 'estatisticas'],
+    queryFn: () => buscarEstatisticasMes(id as string),
+    enabled: id != null,
+  });
+
+  useEffect(() => {
+    if (!id) return;
+
+    function invalidarTudo() {
+      queryClient.invalidateQueries({ queryKey: chaveRegistros(id as string) });
+      queryClient.invalidateQueries({ queryKey: chaveEstatisticas(id as string) });
+      // horas_desde_ultima (status/estatística de tempo) depende do último registro
+      queryClient.invalidateQueries({ queryKey: chavePonto(id as string) });
+    }
+
+    const canal = supabase
+      .channel(`ponto:${id}:registros`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'registros',
+          filter: `ponto_id=eq.${id}`,
+        },
+        invalidarTudo
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'registros',
+          filter: `ponto_id=eq.${id}`,
+        },
+        invalidarTudo
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [id, queryClient]);
+
+  return { ponto, mantenedores, registros, estatisticas };
+}
+
+export function useRemoverRegistro(pontoId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (registroId: string) => {
+      // RLS é a autoridade: a UI só mostra o botão quando o toque é permitido.
+      const { error } = await supabase.from('registros').delete().eq('id', registroId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chaveRegistros(pontoId) });
+      queryClient.invalidateQueries({ queryKey: chaveEstatisticas(pontoId) });
+      queryClient.invalidateQueries({ queryKey: chavePonto(pontoId) });
+    },
+  });
+}
