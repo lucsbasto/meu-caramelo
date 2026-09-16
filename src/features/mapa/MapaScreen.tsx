@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import Mapbox, {
@@ -27,13 +27,15 @@ import {
 // Token público (pk.) — research #3. Sem download token de vetor: estilo é raster.
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? null);
 
-// Centro de fallback quando a localização é negada (Vila Madalena, área do seed).
-// Exportado para o editor de ponto reusar o mesmo fallback (§6.6 Estados).
-export const CENTRO_PADRAO: Centro = { lat: -23.5585, lng: -46.6905 };
+// Centro de fallback quando não há GPS (permissão negada, indisponível ou
+// coordenada inválida). Praça dos Girassóis, centro de Palmas-TO — cidade do
+// piloto. Exportado para o editor de ponto reusar o mesmo fallback (§6.6 Estados).
+export const CENTRO_PADRAO: Centro = { lat: -10.1836, lng: -48.3336 };
 const ESTILO_JSON = JSON.stringify(estiloCaramelo);
 
 export default function MapaScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [centro, setCentro] = useState<Centro | null>(null);
   const [userLoc, setUserLoc] = useState<Centro | null>(null);
   const [filtro, setFiltro] = useState<Filtro>('todos');
@@ -50,11 +52,21 @@ export default function MapaScreen() {
         return;
       }
       try {
-        const pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        // getCurrentPositionAsync pode pendurar indefinidamente quando não há fix
+        // (emulador, GPS frio): sem um teto, o mapa nunca ganha centro. Corremos
+        // contra um timeout para garantir que o fallback (Palmas) sempre entre.
+        const pos = await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+        ]);
         if (!vivo) return;
-        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const c = pos && { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        // Sem posição (timeout) ou coordenada inválida perto de (0,0) — que jogaria
+        // o mapa no oceano — cai no fallback em vez de deixar o mapa sem centro.
+        if (!c || (Math.abs(c.lat) < 1 && Math.abs(c.lng) < 1)) {
+          setCentro(CENTRO_PADRAO);
+          return;
+        }
         setUserLoc(c);
         setCentro(c);
       } catch {
@@ -94,6 +106,30 @@ export default function MapaScreen() {
       pathname: '/ponto/novo',
       params: { lat: String(lat), lng: String(lng) },
     });
+  }
+
+  // FAB "+" (§6.7 terceira entrada): pré-seleciona o ponto mais próximo da
+  // localização atual e vai direto ao registro. Sem localização/pontos, avisa
+  // e não navega (caminho mais simples; troca manual do ponto é follow-up).
+  function onRegistrarProximo() {
+    const origem = userLoc ?? centro;
+    if (pontos.length === 0 || !origem) {
+      Alert.alert(
+        'Sem ponto por perto',
+        'Não encontramos um ponto próximo agora. Toque em um pin no mapa para registrar.'
+      );
+      return;
+    }
+    let maisProximo = pontos[0];
+    let menor = distanciaMetros(origem, maisProximo);
+    for (const p of pontos) {
+      const d = distanciaMetros(origem, p);
+      if (d < menor) {
+        menor = d;
+        maisProximo = p;
+      }
+    }
+    router.push(`/ponto/${maisProximo.id}/registrar`);
   }
 
   // Estado vazio vira CTA para cadastrar o primeiro ponto (§6.6 Como se chega).
@@ -173,6 +209,19 @@ export default function MapaScreen() {
         </View>
       )}
 
+      <Pressable
+        onPress={onRegistrarProximo}
+        accessibilityRole="button"
+        accessibilityLabel="Registrar no ponto mais próximo"
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: insets.bottom + spacing.xl },
+          pressed && styles.fabPressed,
+        ]}
+      >
+        <Text style={styles.fabTexto}>＋</Text>
+      </Pressable>
+
       <PontoSheet
         ponto={selecionado}
         distanciaM={distanciaSelecionado}
@@ -238,4 +287,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.onDark,
   },
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.caramelo,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // sombra discreta para destacar o botão sobre o mapa
+    shadowColor: colors.text,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  fabPressed: { backgroundColor: colors.carameloPressed },
+  fabTexto: { fontSize: 30, color: colors.onDark, marginTop: -2 },
 });
