@@ -81,7 +81,9 @@ export function formatarDesde(criadoEm: string): string {
   return `desde ${MESES[new Date(criadoEm).getMonth()]}`;
 }
 
-const ROTULOS_TIPO: Record<string, string> = {
+// Rótulos PT dos tipos de item (§6.7). Exportado para o formulário de registro
+// reutilizar os mesmos textos sem duplicar (chips de tipo).
+export const ROTULOS_TIPO: Record<string, string> = {
   racao: 'Ração',
   agua: 'Água',
   caseira: 'Comida caseira',
