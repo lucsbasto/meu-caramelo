@@ -1,4 +1,0 @@
-# Expo/RN sobem vários pacotes no mesmo dia num bump de SDK. A política
-# supply-chain do pnpm 12 (minimumReleaseAge, ~24h por padrão no EAS) barra
-# pacotes recém-publicados e quebra o build. Zerada porque o stack é confiável.
-minimumReleaseAge: 0
