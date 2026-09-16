@@ -29,6 +29,9 @@ Thumbs.db
 !.omc/skills/
 !.omc/skills/**
 
+# git worktrees (one per branch/PR — see AGENTS.md)
+.worktrees/
+
 # logs
 *.log
 npm-debug.*
