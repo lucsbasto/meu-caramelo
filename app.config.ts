@@ -1,8 +1,9 @@
 import type { ExpoConfig } from 'expo/config';
 
-// Config dinâmico: injeta o RNMapboxMapsDownloadToken (sk., scope DOWNLOADS:READ)
-// em build time a partir do ambiente. Local: .env (RNMAPBOX_DOWNLOAD_TOKEN).
-// EAS: definir como env var/secret do profile (eas env:create).
+// Config dinâmico. O token de download do SDK nativo do Mapbox (sk.,
+// scope DOWNLOADS:READ) é lido em build time da env RNMAPBOX_MAPS_DOWNLOAD_TOKEN
+// pelo próprio plugin @rnmapbox/maps — não passamos mais via prop
+// RNMapboxMapsDownloadToken (deprecada). Local: .env. EAS: env var/secret do profile.
 const config: ExpoConfig = {
   name: 'Meu Caramelo',
   slug: 'meu-caramelo',
@@ -37,7 +38,6 @@ const config: ExpoConfig = {
       '@rnmapbox/maps',
       {
         RNMapboxMapsVersion: '11.23.1',
-        RNMapboxMapsDownloadToken: process.env.RNMAPBOX_DOWNLOAD_TOKEN,
       },
     ],
   ],
