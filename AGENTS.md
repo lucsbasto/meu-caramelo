@@ -2,6 +2,12 @@
 
 Conventions for agents and humans working in this repo.
 
+## Project rules
+
+Binding rules live in [`RULES.md`](RULES.md) — read it before any non-trivial
+task. It covers code language (English), the Dev Flow best-practices base at
+[`docs/dev-flow/`](docs/dev-flow/), and agent autonomy.
+
 ## Worktree rule — one worktree per branch/PR
 
 Every unit of work (feature, fix, chore that becomes a PR) is done in its own

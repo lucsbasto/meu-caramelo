@@ -8,7 +8,7 @@ values (
   '00000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000000',
   'authenticated', 'authenticated',
-  'demo@meucaramelo.app', crypt('demo1234', gen_salt('bf')),
+  'demo@meucaramelo.app', extensions.crypt('demo1234', extensions.gen_salt('bf')),
   now(), now(), now()
 ) on conflict (id) do nothing;
 
