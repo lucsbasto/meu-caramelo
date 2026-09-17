@@ -163,7 +163,17 @@ export function PontoDetalheScreen({ id }: Props) {
       {
         text: 'Remover',
         style: 'destructive',
-        onPress: () => removerRegistro.mutate(registro.id),
+        onPress: () =>
+          removerRegistro.mutate(registro.id, {
+            // Qualquer falha — inclusive o registro já removido por outra pessoa
+            // (§6.10 Estados) — vira um aviso amigável, nunca um erro técnico. A
+            // lista já foi ressincronizada pelo onError do hook.
+            onError: () =>
+              Alert.alert(
+                'Este registro foi removido',
+                'Ele pode já ter sido removido por outra pessoa.'
+              ),
+          }),
       },
     ]);
   }
@@ -563,7 +573,6 @@ function LinhaRegistro({
   return (
     <Pressable
       onPress={onPress}
-      onLongPress={podeRemover ? onRemover : undefined}
       style={[styles.linhaRegistro, !ultima && styles.linhaRegistroDivisoria]}
     >
       <Avatar url={registro.autorAvatarUrl} size={36} />
@@ -572,6 +581,19 @@ function LinhaRegistro({
         <Text style={styles.linhaRegistroConteudo}>{formatarConteudoRegistro(registro)}</Text>
       </View>
       <Text style={styles.linhaRegistroTempo}>{formatarTempoRegistro(registro.criadoEm)}</Text>
+      {/* Ação visível só para autor/mantenedor (§6.10); a RLS é a autoridade
+          final, mas a UI só oferece o toque a quem pode. */}
+      {podeRemover ? (
+        <Pressable
+          onPress={onRemover}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Remover registro de ${abbreviateName(registro.autorNome)}`}
+          style={({ pressed }) => [styles.botaoRemover, pressed && styles.cartaoPressed]}
+        >
+          <Text style={styles.botaoRemoverIcone}>🗑</Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
@@ -875,6 +897,13 @@ const styles = StyleSheet.create({
   linhaRegistroNome: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.text },
   linhaRegistroConteudo: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
   linhaRegistroTempo: { fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
+  botaoRemover: {
+    width: touch.min,
+    height: touch.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botaoRemoverIcone: { fontSize: 16 },
 
   avatarFallback: {
     backgroundColor: colors.verdeLightBg,
