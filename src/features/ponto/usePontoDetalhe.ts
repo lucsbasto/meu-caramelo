@@ -15,10 +15,10 @@ import {
 
 const QTD_REGISTROS_TELA = 3;
 
-function chavePonto(id: string) {
+export function chavePonto(id: string) {
   return ['ponto', id] as const;
 }
-function chaveMantenedores(id: string) {
+export function chaveMantenedores(id: string) {
   return ['ponto', id, 'mantenedores'] as const;
 }
 function chaveRegistros(id: string) {
@@ -38,7 +38,7 @@ async function buscarPonto(id: string): Promise<PontoDetalhe | null> {
   return data ? normalizarPontoDetalhe(data) : null;
 }
 
-async function buscarMantenedores(id: string): Promise<Mantenedor[]> {
+export async function buscarMantenedores(id: string): Promise<Mantenedor[]> {
   const { data, error } = await supabase
     .from('ponto_mantenedores')
     .select('user_id, papel, criado_em, profiles(nome, avatar_url)')

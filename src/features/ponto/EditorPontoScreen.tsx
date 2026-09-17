@@ -439,7 +439,14 @@ function EditorForm({
             sairMantenedor.mutate(
               { id, userId: usuarioId },
               {
-                onSuccess: () => router.back(),
+                onSuccess: (resultado) => {
+                  router.back();
+                  if (resultado === 'promovido') {
+                    Alert.alert('Você saiu', 'O co-mantenedor mais antigo agora mantém o ponto.');
+                  } else if (resultado === 'orfao') {
+                    Alert.alert('Você saiu', 'O ponto ficou órfão até alguém adotar.');
+                  }
+                },
                 onError: (e) =>
                   Alert.alert('Erro', e instanceof Error ? e.message : 'Não deu para sair.'),
               }

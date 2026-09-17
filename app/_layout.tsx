@@ -27,6 +27,9 @@ export default function RootLayout() {
             <Stack.Screen name="ponto/novo" />
             <Stack.Screen name="ponto/[id]/editar" />
             <Stack.Screen name="ponto/[id]/registrar" />
+            <Stack.Screen name="ponto/[id]/mantenedores" />
+            {/* Aceite de convite de co-mantenedor por deep-link (§7.4). */}
+            <Stack.Screen name="convite/[token]" />
             {/* Login empilhado como card/modal (§6.2). */}
             <Stack.Screen name="login" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth-callback" />

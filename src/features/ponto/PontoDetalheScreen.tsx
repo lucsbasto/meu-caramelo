@@ -221,7 +221,7 @@ export function PontoDetalheScreen({ id }: Props) {
               <CartaoMantenedor
                 mantenedores={mantenedores.data ?? []}
                 usuarioId={user?.id ?? null}
-                onPress={emBreve}
+                onPress={() => router.push(`/ponto/${id}/mantenedores`)}
                 onEditar={() => router.push(`/ponto/${id}/editar`)}
               />
             )

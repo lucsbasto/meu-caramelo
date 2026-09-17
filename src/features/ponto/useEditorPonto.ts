@@ -8,6 +8,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import { supabase } from '@/lib/supabase';
 import type { TablesInsert } from '@/lib/database.types';
+import type { ResultadoSaida } from './convites';
 import { distanciaMetros } from '@/features/mapa/pontos';
 import {
   BUCKET_FOTOS,
@@ -342,21 +343,26 @@ export function useReativarPonto() {
 }
 
 // ---------------------------------------------------------------------------
-// Sair de mantenedor (§6.6): remove a própria linha em ponto_mantenedores.
+// Sair de mantenedor (§7.4/§6.6): passa pela RPC `sair_mantenedor`, que decide
+// entre promover o co mais antigo a principal (avisando-o) ou orfanar o ponto.
+// Um DELETE cru não serve: a RLS pós-0006 bloqueia o principal de apagar a
+// própria linha justamente para forçar este caminho de promoção/órfão.
 // ---------------------------------------------------------------------------
 export function useSairMantenedor() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
-      const { error } = await supabase
-        .from('ponto_mantenedores')
-        .delete()
-        .eq('ponto_id', id)
-        .eq('user_id', userId);
+  // Fronteira do supabase: a RPC nova ainda não está nos tipos gerados.
+  const db = supabase as unknown as {
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+  };
+  return useMutation<ResultadoSaida, Error, { id: string; userId: string }>({
+    mutationFn: async ({ id }) => {
+      const { data, error } = await db.rpc('sair_mantenedor', { p_ponto: id });
       if (error) throw error;
+      return data as ResultadoSaida;
     },
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['ponto', vars.id] });
+      queryClient.invalidateQueries({ queryKey: ['ponto', vars.id, 'mantenedores'] });
       queryClient.invalidateQueries({ queryKey: ['pontos'] });
       queryClient.invalidateQueries({ queryKey: ['meus-pontos'] });
     },

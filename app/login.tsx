@@ -94,7 +94,7 @@ export default function LoginScreen() {
     setEmailError(null);
     setSending(true);
     try {
-      await sendMagicLink(trimmed);
+      await sendMagicLink(trimmed, next);
       setSentTo(trimmed);
       setCooldown(RESEND_SECONDS);
     } catch (err) {
@@ -110,7 +110,7 @@ export default function LoginScreen() {
     if (cooldown > 0 || !sentTo || anyLoading) return;
     setSending(true);
     try {
-      await sendMagicLink(sentTo);
+      await sendMagicLink(sentTo, next);
       setCooldown(RESEND_SECONDS);
     } catch (err) {
       setEmailError(
