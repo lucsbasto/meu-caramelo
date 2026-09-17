@@ -32,6 +32,12 @@ Thumbs.db
 # git worktrees (one per branch/PR — see AGENTS.md)
 .worktrees/
 
+# editor/agent local config
+.claude/
+
+# brag/marketing render output
+brag-output/
+
 # logs
 *.log
 npm-debug.*
