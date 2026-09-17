@@ -12,6 +12,8 @@ export const colors = {
 
   caramelo: '#B9702F',
   carameloPressed: '#8F521C',
+  // Amber border of the orphan-point adoption block (§6.5).
+  amber: '#E0A45E',
 
   verde: '#3E8F5E',
   verdeLightBg: '#E4EFE7',
