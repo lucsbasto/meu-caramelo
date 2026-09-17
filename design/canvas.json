@@ -161,7 +161,7 @@
       "x": 2070,
       "y": 320,
       "w": 360,
-      "text": "Sobre o mapa\n\nO grid de ruas aqui é desenhado à mão só como referência: o preview do canvas não faz requisição de rede, então nenhum tile carrega.\n\nO mapa real vai junto, fora do canvas:\n· estilo-caramelo.json — style Mapbox nesta paleta\n· mapa-preview.html — abre no navegador com seu token\n· MapaScreen.tsx — @rnmapbox/maps + Supabase realtime\n\nPins: verde = ok hoje (< 4 h), caramelo = precisa hoje (4-12 h), vermelho = urgente (> 12 h sem registro). O filtro \"Precisa hoje\" cobre caramelo + vermelho."
+      "text": "Sobre o mapa\n\nO grid de ruas aqui é desenhado à mão só como referência: o preview do canvas não faz requisição de rede, então nenhum tile carrega.\n\nO mapa real vai junto, fora do canvas:\n· estilo-caramelo.json — style Mapbox nesta paleta\n· mapa-preview.html — abre no navegador com seu token\n· MapaScreen.tsx — @rnmapbox/maps + Supabase realtime\n\nPins — duas informações no mesmo marcador:\n· PREENCHIMENTO = comida. Verde cheio (< 4 h), âmbar precisa hoje (4-12 h), vermelho vazio (> 12 h).\n· BORDA = responsabilidade. Anel caramelo quando o ponto tem mantenedor, anel branco quando está sem dono.\n\nAs duas são independentes: existe ponto cheio sem dono e ponto vazio com dono. \"Sem dono e vazio\" vira o pin mais chamativo do mapa, que é o que ele deveria ser.\n\nO filtro \"Precisa hoje\" cobre âmbar + vermelho.\n\nSVGs prontos em assets/mapa/."
     },
     {
       "id": "nota-mantenedor",

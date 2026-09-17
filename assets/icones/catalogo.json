@@ -1,0 +1,218 @@
+[
+  {
+    "nome": "pata",
+    "tipo": "fill",
+    "descricao": "Pata — marca do app",
+    "uso": "pin do mapa, marca, placeholder de foto"
+  },
+  {
+    "nome": "pin",
+    "tipo": "stroke",
+    "descricao": "Pin de local",
+    "uso": "aba Mapa, endereço, notificação de ponto novo"
+  },
+  {
+    "nome": "tigela",
+    "tipo": "stroke",
+    "descricao": "Tigela com vapor — ração / alimentar",
+    "uso": "botão Alimentar, chip Ração, conquista"
+  },
+  {
+    "nome": "gota",
+    "tipo": "stroke",
+    "descricao": "Gota — água",
+    "uso": "chip Água, pin de bebedouro, conquista"
+  },
+  {
+    "nome": "camera",
+    "tipo": "stroke",
+    "descricao": "Câmera",
+    "uso": "adicionar foto, conquista Relato completo"
+  },
+  {
+    "nome": "check",
+    "tipo": "stroke",
+    "descricao": "Confirmação",
+    "uso": "status ok hoje, selo Alimentou, confirmar registro"
+  },
+  {
+    "nome": "alerta",
+    "tipo": "stroke",
+    "descricao": "Atenção",
+    "uso": "status urgente, notificação de ponto vencido"
+  },
+  {
+    "nome": "sino",
+    "tipo": "stroke",
+    "descricao": "Sino",
+    "uso": "notificações"
+  },
+  {
+    "nome": "busca",
+    "tipo": "stroke",
+    "descricao": "Lupa",
+    "uso": "busca do mapa"
+  },
+  {
+    "nome": "mais",
+    "tipo": "stroke",
+    "descricao": "Mais",
+    "uso": "botão central de registro, steppers, adicionar"
+  },
+  {
+    "nome": "menos",
+    "tipo": "stroke",
+    "descricao": "Menos",
+    "uso": "steppers"
+  },
+  {
+    "nome": "voltar",
+    "tipo": "stroke",
+    "descricao": "Seta esquerda",
+    "uso": "voltar em telas empilhadas"
+  },
+  {
+    "nome": "avancar",
+    "tipo": "stroke",
+    "descricao": "Seta direita",
+    "uso": "linhas de menu, cards clicáveis"
+  },
+  {
+    "nome": "expandir",
+    "tipo": "stroke",
+    "descricao": "Seta para baixo",
+    "uso": "seletor de período, listas suspensas"
+  },
+  {
+    "nome": "coracao",
+    "tipo": "fill",
+    "descricao": "Coração",
+    "uso": "reação no feed, seguir ponto"
+  },
+  {
+    "nome": "comentario",
+    "tipo": "stroke",
+    "descricao": "Balão",
+    "uso": "comentários"
+  },
+  {
+    "nome": "compartilhar",
+    "tipo": "stroke",
+    "descricao": "Compartilhar",
+    "uso": "feed, detalhe do ponto"
+  },
+  {
+    "nome": "relogio",
+    "tipo": "stroke",
+    "descricao": "Relógio",
+    "uso": "tempo desde o último registro, histórico"
+  },
+  {
+    "nome": "trofeu",
+    "tipo": "stroke",
+    "descricao": "Troféu",
+    "uso": "aba Ranking (fora do MVP)"
+  },
+  {
+    "nome": "coroa",
+    "tipo": "fill",
+    "descricao": "Coroa — mantenedor",
+    "uso": "selo no avatar, adotar ponto, 1º do ranking"
+  },
+  {
+    "nome": "usuario",
+    "tipo": "stroke",
+    "descricao": "Pessoa",
+    "uso": "aba Perfil"
+  },
+  {
+    "nome": "feed",
+    "tipo": "stroke",
+    "descricao": "Cards empilhados",
+    "uso": "aba Comunidade"
+  },
+  {
+    "nome": "camadas",
+    "tipo": "stroke",
+    "descricao": "Camadas",
+    "uso": "alternar estilo do mapa"
+  },
+  {
+    "nome": "alvo",
+    "tipo": "stroke",
+    "descricao": "Alvo",
+    "uso": "recentralizar o mapa"
+  },
+  {
+    "nome": "navegar",
+    "tipo": "fill",
+    "descricao": "Seta de navegação",
+    "uso": "Como chegar, posição do usuário"
+  },
+  {
+    "nome": "lapis",
+    "tipo": "stroke",
+    "descricao": "Lápis",
+    "uso": "editar perfil, editar ponto"
+  },
+  {
+    "nome": "calendario-check",
+    "tipo": "stroke",
+    "descricao": "Calendário com confirmação",
+    "uso": "conquista Rotina, data do pedido de ajuda"
+  },
+  {
+    "nome": "escudo",
+    "tipo": "stroke",
+    "descricao": "Escudo",
+    "uso": "conquista Sentinela, aviso de privacidade"
+  },
+  {
+    "nome": "olho",
+    "tipo": "stroke",
+    "descricao": "Olho",
+    "uso": "conquista Olho atento"
+  },
+  {
+    "nome": "ciclo",
+    "tipo": "stroke",
+    "descricao": "Setas em ciclo",
+    "uso": "cobrir pedido de ajuda, conquista Deu cobertura"
+  },
+  {
+    "nome": "pin-estrela",
+    "tipo": "stroke",
+    "descricao": "Pin com estrela",
+    "uso": "conquista Guardião do bairro"
+  },
+  {
+    "nome": "sacola",
+    "tipo": "stroke",
+    "descricao": "Sacola",
+    "uso": "apoiador, ponto de coleta (fora do MVP)"
+  },
+  {
+    "nome": "engrenagem",
+    "tipo": "stroke",
+    "descricao": "Engrenagem",
+    "uso": "configurações"
+  },
+  {
+    "nome": "envelope",
+    "tipo": "stroke",
+    "descricao": "Envelope",
+    "uso": "entrar com e-mail"
+  },
+  {
+    "nome": "cadeado",
+    "tipo": "stroke",
+    "descricao": "Cadeado",
+    "uso": "conquista bloqueada"
+  },
+  {
+    "nome": "verificado",
+    "tipo": "fill",
+    "descricao": "Selo verificado",
+    "uso": "apoiador verificado (fora do MVP)"
+  }
+]
