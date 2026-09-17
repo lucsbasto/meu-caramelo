@@ -1,8 +1,10 @@
 // Queries do detalhe do ponto (§6.4) + realtime: INSERT/DELETE em `registros`
 // filtrado por ponto_id invalida as três listas que dependem dele.
 import { useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import type { TablesInsert } from '@/lib/database.types';
+import { PAPEL_PRINCIPAL } from './editor';
 import {
   normalizarPontoDetalhe,
   type EstatisticasMes,
@@ -174,6 +176,66 @@ export function useRemoverRegistro(pontoId: string) {
       queryClient.invalidateQueries({ queryKey: chaveRegistros(pontoId) });
       queryClient.invalidateQueries({ queryKey: chaveEstatisticas(pontoId) });
       queryClient.invalidateQueries({ queryKey: chavePonto(pontoId) });
+    },
+  });
+}
+
+// Name of the partial unique index `um_principal_por_ponto`: when two adoptions
+// race for the same point, Postgres rejects the second one with code 23505.
+const PRINCIPAL_INDEX = 'um_principal_por_ponto';
+
+// Signals that the adoption lost the race (someone else became principal first).
+// It is a distinct error from a real failure so the caller shows a friendly
+// message instead of a technical one, reloading the screen in the normal state.
+export class ConcurrentAdoptionError extends Error {
+  constructor() {
+    super('This point was just adopted by someone else.');
+    this.name = 'ConcurrentAdoptionError';
+  }
+}
+
+// Reloads point + maintainers so the screen leaves the orphan state and shows
+// the new principal (whether it is you or whoever won the race).
+function invalidateAdoption(queryClient: QueryClient, pontoId: string) {
+  queryClient.invalidateQueries({ queryKey: chavePonto(pontoId) });
+  queryClient.invalidateQueries({ queryKey: chaveMantenedores(pontoId) });
+}
+
+// Orphan-point adoption (§6.5): inserts the authenticated user's principal row.
+// Uses a plain `.insert()` (not upsert): the race MUST hit the partial unique
+// index so we can tell "someone won the race" apart from a network failure.
+export function useAdoptPoint(pontoId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const row: TablesInsert<'ponto_mantenedores'> = {
+        ponto_id: pontoId,
+        user_id: userId,
+        papel: PAPEL_PRINCIPAL,
+      };
+      // RLS allows inserting your own principal row (user_id = auth.uid()).
+      const { error } = await supabase.from('ponto_mantenedores').insert(row);
+      if (error) {
+        // Only a violation of the partial unique index means "someone won the
+        // race". A bare 23505 (e.g. PK collision because you already have a row
+        // on this point) is NOT a race and must not claim another person
+        // adopted it — let it flow to the generic reload/error path.
+        if (error.message.includes(PRINCIPAL_INDEX)) {
+          throw new ConcurrentAdoptionError();
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      invalidateAdoption(queryClient, pontoId);
+    },
+    onError: (error) => {
+      // Lost race: the winning row already exists — reload to reveal the new
+      // maintainer. A real failure flows to the caller to handle as an error.
+      if (error instanceof ConcurrentAdoptionError) {
+        invalidateAdoption(queryClient, pontoId);
+      }
     },
   });
 }

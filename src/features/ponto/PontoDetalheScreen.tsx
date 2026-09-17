@@ -32,7 +32,12 @@ import {
   type PontoDetalhe,
   type RegistroPonto,
 } from './dados';
-import { useRemoverRegistro, usePontoDetalhe } from './usePontoDetalhe';
+import {
+  ConcurrentAdoptionError,
+  useAdoptPoint,
+  useRemoverRegistro,
+  usePontoDetalhe,
+} from './usePontoDetalhe';
 import { useSeguir } from './useSeguir';
 
 const ALTURA_CABECALHO = 252;
@@ -48,6 +53,7 @@ export function PontoDetalheScreen({ id }: Props) {
   const { ponto, mantenedores, registros, estatisticas } = usePontoDetalhe(id);
   const seguir = useSeguir(id, user?.id ?? null);
   const removerRegistro = useRemoverRegistro(id);
+  const adopt = useAdoptPoint(id);
   const minhaLocalizacao = useLocalizacaoDiscreta();
 
   if (ponto.isLoading) {
@@ -97,6 +103,58 @@ export function PontoDetalheScreen({ id }: Props) {
       return;
     }
     router.push(`/ponto/${id}/registrar`);
+  }
+
+  function onAdopt() {
+    // Guard against a fast double tap: the confirm Alert opens before `mutate`,
+    // while `isPending` is still false, so on Android stacked Alerts could fire
+    // two mutations. Bail out if an adoption is already in flight.
+    if (adopt.isPending) return;
+    // Login wall first (§7.1): without a session it returns here via `next` and
+    // the user taps again — we do not auto-trigger the adoption on return.
+    if (
+      !requireAuth(
+        'Para adotar este ponto e virar o mantenedor, entre na sua conta.',
+        `/ponto/${id}`
+      )
+    ) {
+      return;
+    }
+    const userId = user?.id;
+    if (!userId) return; // requireAuth guarantees a session; guard only for typing
+
+    Alert.alert(
+      'Adotar este ponto?',
+      'Você vira o mantenedor e passa a cuidar deste ponto. É reversível depois nas configurações do ponto.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Adotar',
+          onPress: () =>
+            adopt.mutate(userId, {
+              onSuccess: () => {
+                Alert.alert('Pronto!', 'Você agora é o mantenedor deste ponto.');
+              },
+              onError: async (err) => {
+                if (err instanceof ConcurrentAdoptionError) {
+                  // Fetch the freshly loaded maintainer to name whoever won the
+                  // race; never show a technical error.
+                  const { data } = await mantenedores.refetch();
+                  const list = data ?? [];
+                  const principal = list.find((m) => m.papel === 'principal') ?? list[0];
+                  const name = principal ? abbreviateName(principal.nome) : 'outra pessoa';
+                  Alert.alert(
+                    'Ponto já adotado',
+                    `Este ponto acabou de ser adotado por ${name}.`
+                  );
+                  return;
+                }
+                Alert.alert('Não deu para adotar agora', 'Tente de novo.');
+              },
+            }),
+        },
+      ]
+    );
   }
 
   function onRemoverRegistro(registro: RegistroPonto) {
@@ -184,7 +242,14 @@ export function PontoDetalheScreen({ id }: Props) {
         </View>
       </ScrollView>
 
-      <BarraAcao ativo={p.ativo} onComoChegar={onComoChegar} onRegistrar={onRegistrar} />
+      <BarraAcao
+        ativo={p.ativo}
+        orphan={p.mantenedorId == null}
+        adopting={adopt.isPending}
+        onComoChegar={onComoChegar}
+        onRegistrar={onRegistrar}
+        onAdopt={onAdopt}
+      />
     </View>
   );
 }
@@ -399,14 +464,33 @@ function CartaoMantenedor({
   );
 }
 
-// Ponto órfão: placeholder visual da adoção. A ação de adotar é Fase 3 (§6.5).
+// Orphan point: adoption invite (§6.5 Anatomy). The action lives in BarraAcao.
 function BlocoAdocao() {
   return (
     <View style={styles.blocoAdocao}>
-      <Text style={styles.blocoAdocaoTitulo}>Este ponto está sem mantenedor</Text>
-      <Text style={styles.blocoAdocaoTexto}>
-        Alguém cuidava daqui e não pôde continuar. Adotar chega em breve.
-      </Text>
+      <View style={styles.adoptionTop}>
+        <View style={styles.adoptionCrown}>
+          <Text style={styles.adoptionCrownEmoji}>👑</Text>
+        </View>
+        <Text style={styles.blocoAdocaoTitulo}>Este ponto não tem mantenedor</Text>
+      </View>
+
+      <Text style={styles.blocoAdocaoTexto}>Quem adota vira o rosto do ponto e pode:</Text>
+
+      <View style={styles.adoptionItems}>
+        <AdoptionItem text="editar nome, endereço e fotos" />
+        <AdoptionItem text="corrigir ou remover registro errado" />
+        <AdoptionItem text="convidar co-mantenedores" />
+      </View>
+    </View>
+  );
+}
+
+function AdoptionItem({ text }: { text: string }) {
+  return (
+    <View style={styles.adoptionItem}>
+      <Text style={styles.adoptionItemMark}>✓</Text>
+      <Text style={styles.adoptionItemText}>{text}</Text>
     </View>
   );
 }
@@ -515,26 +599,65 @@ function Avatar({ url, size }: { url: string | null; size: number }) {
 
 function BarraAcao({
   ativo,
+  orphan,
+  adopting,
   onComoChegar,
   onRegistrar,
+  onAdopt,
 }: {
   ativo: boolean;
+  orphan: boolean;
+  adopting: boolean;
   onComoChegar: () => void;
   onRegistrar: () => void;
+  onAdopt: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  // Active orphan (§6.5 item 3): the square button becomes "registrar" and the
+  // primary one becomes "Adotar este ponto". Normal and disabled stay as before.
+  const adoptionMode = orphan && ativo;
 
   return (
     <View style={[styles.barraAcao, { paddingBottom: insets.bottom + spacing.md }]}>
-      <Pressable
-        onPress={onComoChegar}
-        accessibilityRole="button"
-        style={({ pressed }) => [styles.botaoComoChegar, pressed && styles.cartaoPressed]}
-      >
-        <Text style={styles.botaoComoChegarTexto}>Como{'\n'}chegar</Text>
-      </Pressable>
+      {adoptionMode ? (
+        <Pressable
+          onPress={onRegistrar}
+          accessibilityRole="button"
+          accessibilityLabel="Registrar alimentação"
+          style={({ pressed }) => [styles.botaoComoChegar, pressed && styles.cartaoPressed]}
+        >
+          <Text style={styles.squareButtonIcon}>🍲</Text>
+          <Text style={styles.botaoComoChegarTexto}>registrar</Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={onComoChegar}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.botaoComoChegar, pressed && styles.cartaoPressed]}
+        >
+          <Text style={styles.botaoComoChegarTexto}>Como{'\n'}chegar</Text>
+        </Pressable>
+      )}
 
-      {ativo && (
+      {adoptionMode ? (
+        <Pressable
+          onPress={onAdopt}
+          disabled={adopting}
+          accessibilityRole="button"
+          accessibilityLabel="Adotar este ponto"
+          style={({ pressed }) => [
+            styles.botaoRegistrar,
+            pressed && styles.botaoRegistrarPressed,
+            adopting && styles.buttonDisabled,
+          ]}
+        >
+          {adopting ? (
+            <ActivityIndicator color={colors.onDark} />
+          ) : (
+            <Text style={styles.botaoRegistrarTexto}>👑  Adotar este ponto</Text>
+          )}
+        </Pressable>
+      ) : ativo ? (
         <Pressable
           onPress={onRegistrar}
           accessibilityRole="button"
@@ -545,7 +668,7 @@ function BarraAcao({
         >
           <Text style={styles.botaoRegistrarTexto}>Registrar alimentação</Text>
         </Pressable>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -680,16 +803,42 @@ const styles = StyleSheet.create({
   iconeEditar: { fontSize: 18, color: colors.caramelo },
 
   blocoAdocao: {
-    backgroundColor: colors.verdeLightBg,
+    backgroundColor: colors.bg,
     borderRadius: radii.card,
+    borderWidth: 1,
+    borderColor: colors.amber,
     padding: spacing.lg,
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
-  blocoAdocaoTitulo: { fontFamily: fonts.title, fontSize: 16, color: colors.verdeDark },
+  adoptionTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  adoptionCrown: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.caramelo,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adoptionCrownEmoji: { fontSize: 20 },
+  blocoAdocaoTitulo: { flex: 1, fontFamily: fonts.title, fontSize: 16, color: colors.text },
   blocoAdocaoTexto: {
     fontFamily: fonts.body,
     fontSize: 13,
     lineHeight: 19,
+    color: colors.textSecondary,
+  },
+  adoptionItems: { gap: spacing.xs },
+  adoptionItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  adoptionItemMark: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.verde,
+  },
+  adoptionItemText: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 13,
     color: colors.textSecondary,
   },
 
@@ -760,6 +909,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
   },
+  squareButtonIcon: { fontSize: 20 },
+  buttonDisabled: { opacity: 0.6 },
   botaoRegistrar: {
     flex: 1,
     minHeight: touch.min,
