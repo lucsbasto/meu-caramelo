@@ -597,6 +597,36 @@ export type Database = {
       }
     }
     Functions: {
+      feed_proximo: {
+        Args: {
+          lat: number
+          lng: number
+          raio_m?: number
+          limite?: number
+          antes?: string
+          antes_id?: string
+          escopo?: string
+        }
+        Returns: {
+          item_tipo: string
+          item_id: string
+          criado_em: string
+          ponto_id: string
+          ponto_nome: string
+          autor_id: string
+          autor_nome: string
+          autor_avatar_url: string | null
+          conteudo: string | null
+          foto_url: string | null
+          caes: number | null
+          gatos: number | null
+          tipos: Database["public"]["Enums"]["tipo_item"][] | null
+          reacoes_count: number
+          comentarios_count: number
+          pedido_status: Database["public"]["Enums"]["status_pedido"] | null
+          data_alvo: string | null
+        }[]
+      }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined
