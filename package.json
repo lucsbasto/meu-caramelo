@@ -11,6 +11,10 @@
     "ios": "expo run:ios",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "db:new": "npx supabase migration new",
+    "db:list": "npx supabase migration list --linked",
+    "db:push": "npx supabase db push --linked",
+    "db:repair": "npx supabase migration repair --status applied --linked",
     "db:types": "npx supabase gen types typescript --linked > src/lib/database.types.ts"
   },
   "dependencies": {
