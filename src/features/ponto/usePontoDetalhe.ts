@@ -163,19 +163,49 @@ export function usePontoDetalhe(id: string | undefined) {
   return { ponto, mantenedores, registros, estatisticas };
 }
 
+// Sinaliza que o delete não afetou nenhuma linha: o registro já tinha sido
+// removido por outra pessoa, ou a permissão do usuário venceu e a RLS recusou
+// silenciosamente (delete recusado casa 0 linhas, sem erro). A tela mostra o
+// aviso amigável de §6.10 em vez de fingir que removeu.
+export class RegistroNaoRemovidoError extends Error {
+  constructor() {
+    super('Nenhum registro foi removido.');
+    this.name = 'RegistroNaoRemovidoError';
+  }
+}
+
+function invalidarRegistros(queryClient: QueryClient, pontoId: string) {
+  queryClient.invalidateQueries({ queryKey: chaveRegistros(pontoId) });
+  queryClient.invalidateQueries({ queryKey: chaveEstatisticas(pontoId) });
+  // status derivado depende do último registro
+  queryClient.invalidateQueries({ queryKey: chavePonto(pontoId) });
+}
+
 export function useRemoverRegistro(pontoId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (registroId: string) => {
       // RLS é a autoridade: a UI só mostra o botão quando o toque é permitido.
-      const { error } = await supabase.from('registros').delete().eq('id', registroId);
+      // O .select() devolve as linhas apagadas — um delete que casa 0 linhas
+      // (registro já removido, ou RLS negando por permissão vencida) NÃO é erro
+      // do Postgres, então precisamos detectar e sinalizar (§6.10 Estados).
+      const { data, error } = await supabase
+        .from('registros')
+        .delete()
+        .eq('id', registroId)
+        .select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new RegistroNaoRemovidoError();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: chaveRegistros(pontoId) });
-      queryClient.invalidateQueries({ queryKey: chaveEstatisticas(pontoId) });
-      queryClient.invalidateQueries({ queryKey: chavePonto(pontoId) });
+    onSuccess: () => invalidarRegistros(queryClient, pontoId),
+    onError: (erro) => {
+      // Removido por outro / negado: ressincroniza a lista com a verdade do
+      // servidor (a linha some se de fato já não existe). Falha real recarrega
+      // igual — a lista fica consistente de qualquer forma.
+      if (erro instanceof RegistroNaoRemovidoError) {
+        invalidarRegistros(queryClient, pontoId);
+      }
     },
   });
 }
