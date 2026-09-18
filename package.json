@@ -11,6 +11,9 @@
     "ios": "expo run:ios",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --silent",
     "db:new": "npx supabase migration new",
     "db:list": "npx supabase migration list --linked",
     "db:push": "npx supabase db push --linked",
@@ -41,12 +44,19 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
     "react-native-url-polyfill": "^2.0.0"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.2.0",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.5",
+    "react-test-renderer": "19.2.3",
     "typescript": "~6.0.3"
   }
 }
