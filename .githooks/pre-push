@@ -1,0 +1,36 @@
+#!/bin/sh
+# Green-gate: nothing leaves the machine red.
+# Before any push (which is what opening/updating a PR needs), the full
+# verification gate must pass: lint + typecheck + tests.
+#
+# This is the enforceable half of the flow. What a hook CANNOT enforce:
+# that tests were written BEFORE code (authoring order is invisible to git)
+# — that stays a TDD discipline in the implement flow. The hook enforces
+# the OUTCOME: no red code ships.
+#
+# Bypass note: skippable with --no-verify. The un-bypassable layer is
+# GitHub branch protection with required status checks on main.
+
+# Skip when there is nothing to push (delete refs).
+if [ -t 0 ]; then :; fi
+
+echo "pre-push gate: lint + typecheck + test"
+
+run() {
+  echo ""
+  echo ">>> $1"
+  # shellcheck disable=SC2086
+  if ! pnpm $2; then
+    echo ""
+    echo "BLOCKED: '$1' failed. Push refused — fix red before opening/updating a PR."
+    exit 1
+  fi
+}
+
+run "lint"      "lint"
+run "typecheck" "typecheck"
+run "test"      "test:ci"
+
+echo ""
+echo "gate green — push allowed."
+exit 0
