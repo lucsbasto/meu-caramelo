@@ -31,6 +31,7 @@ Thumbs.db
 
 # git worktrees (one per branch/PR — see AGENTS.md)
 .worktrees/
+worktrees/
 
 # editor/agent local config
 .claude/

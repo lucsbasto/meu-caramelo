@@ -6,7 +6,10 @@
   "main": "expo-router/entry",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
+    "prepare": "git config core.hooksPath .githooks",
+    "new-task": "node scripts/new-task.mjs",
     "start": "expo start --dev-client",
+    "dev": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "lint": "expo lint",
