@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import Mapbox, {
   Camera,
@@ -16,6 +16,7 @@ import estiloCaramelo from './estilo-caramelo.json';
 import { FiltroChips } from './FiltroChips';
 import { PontoSheet } from './PontoSheet';
 import { usePontos, type Centro } from './usePontos';
+import { consumirFoco } from './foco';
 import {
   aplicarFiltro,
   distanciaMetros,
@@ -40,6 +41,10 @@ export default function MapaScreen() {
   const [userLoc, setUserLoc] = useState<Centro | null>(null);
   const [filtro, setFiltro] = useState<Filtro>('todos');
   const [selecionado, setSelecionado] = useState<Ponto | null>(null);
+  // Ponto pedido pela busca (§6.14) que ainda não chegou na lista atual: fica
+  // pendente até a query do novo centro trazê-lo, aí abre a folha.
+  const [pontoPendente, setPontoPendente] = useState<string | null>(null);
+  const cameraRef = useRef<Camera>(null);
 
   // Permissão "when in use" (§7.2) + posição inicial; fallback se negada
   useEffect(() => {
@@ -90,6 +95,43 @@ export default function MapaScreen() {
     if (!selecionado || !userLoc) return null;
     return distanciaMetros(userLoc, selecionado);
   }, [selecionado, userLoc]);
+
+  // Consome o pedido de foco da busca ao reganhar o foco da aba (§6.14). Centra
+  // a câmera na coordenada; se veio um pontoId, aponta o centro da query pra lá
+  // e deixa o ponto pendente até a lista trazê-lo (abaixo). Sem pontoId, só move.
+  useFocusEffect(
+    useCallback(() => {
+      const foco = consumirFoco();
+      if (!foco) return;
+      setCentro({ lat: foco.lat, lng: foco.lng });
+      cameraRef.current?.setCamera({
+        centerCoordinate: [foco.lng, foco.lat],
+        zoomLevel: 16,
+        animationDuration: 600,
+      });
+      if (foco.pontoId) {
+        setPontoPendente(foco.pontoId);
+      } else {
+        setSelecionado(null);
+      }
+    }, [])
+  );
+
+  // Quando o ponto pedido pela busca aparece na lista do novo centro, seleciona
+  // (abre a folha) e limpa o pendente. Ajuste de estado derivado durante a
+  // renderização (padrão recomendado do React), guardado para não repetir.
+  if (pontoPendente) {
+    const alvo = pontos.find((p) => p.id === pontoPendente);
+    if (alvo) {
+      if (alvo.id !== selecionado?.id) setSelecionado(alvo);
+      setPontoPendente(null);
+    } else if (!isLoading) {
+      // Query do novo centro assentou sem o ponto (removido, fora do raio após
+      // arredondamento, ou erro de RPC): desiste em vez de ficar preso pra
+      // sempre. A câmera já centralizou; só a folha não abre.
+      setPontoPendente(null);
+    }
+  }
 
   function onPressPin(e: {
     features: { properties: { [k: string]: unknown } | null }[];
@@ -151,6 +193,7 @@ export default function MapaScreen() {
       >
         {centro && (
           <Camera
+            ref={cameraRef}
             defaultSettings={{
               centerCoordinate: [centro.lng, centro.lat],
               zoomLevel: 14,
@@ -181,6 +224,15 @@ export default function MapaScreen() {
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.overlayTopo} pointerEvents="box-none">
+        <Pressable
+          onPress={() => router.push('/busca')}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar ponto ou endereço"
+          style={styles.buscaBar}
+        >
+          <Text style={styles.buscaIcone}>🔍</Text>
+          <Text style={styles.buscaPlaceholder}>Buscar ponto ou endereço</Text>
+        </Pressable>
         <FiltroChips filtro={filtro} onChange={setFiltro} />
       </SafeAreaView>
 
@@ -243,6 +295,29 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   mapa: { flex: 1 },
   overlayTopo: { position: 'absolute', top: 0, left: 0, right: 0 },
+  buscaBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: 48,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    // sombra discreta (§6.3 anatomia): pílula branca flutuando sobre o mapa
+    shadowColor: colors.text,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  buscaIcone: { fontSize: 16 },
+  buscaPlaceholder: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.textWeak,
+  },
   aviso: {
     position: 'absolute',
     top: '48%',

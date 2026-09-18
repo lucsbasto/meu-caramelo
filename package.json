@@ -21,7 +21,8 @@
     "db:list": "npx supabase migration list --linked",
     "db:push": "npx supabase db push --linked",
     "db:repair": "npx supabase migration repair --status applied --linked",
-    "db:types": "npx supabase gen types typescript --linked > src/lib/database.types.ts"
+    "db:types": "npx supabase gen types typescript --linked > src/lib/database.types.ts",
+    "functions:deploy": "npx supabase functions deploy enviar-push"
   },
   "dependencies": {
     "@react-native-google-signin/google-signin": "^16.1.5",

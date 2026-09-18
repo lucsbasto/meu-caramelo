@@ -384,6 +384,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# WP14 (§7.5) — disparo de push. Invocada por cron/webhook com service role ou
+# com um segredo próprio; não usa JWT de usuário.
+[functions.enviar-push]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
