@@ -34,10 +34,11 @@ if (slug.length > 40) {
 }
 
 const branch = `${USER}/${type}/${slug}`;
-const repoRoot = run("git", ["rev-parse", "--show-toplevel"]).trim();
-const repoName = path.basename(repoRoot);
-const parent = path.dirname(repoRoot);
-const wtPath = path.join(parent, `${repoName}-${slug}`);
+// Anchor to the MAIN checkout even when invoked from a linked worktree:
+// --git-common-dir points at the shared .git, whose parent is the main root.
+const commonDir = run("git", ["rev-parse", "--git-common-dir"]).trim();
+const mainRoot = path.resolve(path.dirname(path.resolve(commonDir)));
+const wtPath = path.join(mainRoot, "worktrees", slug);
 
 if (existsSync(wtPath)) {
   fail(`worktree already exists: ${wtPath}`);
