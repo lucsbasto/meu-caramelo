@@ -8,6 +8,14 @@ import { colors } from '@/theme';
 import { AuthProvider } from '@/features/auth/session';
 import { OnboardingGate } from '@/features/onboarding/OnboardingGate';
 import { useFlushFilaOffline } from '@/features/ponto/useRegistro';
+import { usePushNotifications } from '@/features/notificacoes/usePushNotifications';
+
+// Efeitos de push (WP14): registra o token ao logar e navega no toque (§4.5).
+// Fica dentro do AuthProvider (usa useAuth) e não renderiza nada.
+function PushBridge() {
+  usePushNotifications();
+  return null;
+}
 
 // Segura o splash até a porta de primeira execução decidir a rota inicial
 // (§6.1), pra não piscar o mapa antes de eventualmente ir ao onboarding.
@@ -23,6 +31,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <StatusBar style="dark" />
           <OnboardingGate />
+          <PushBridge />
           <Stack
             screenOptions={{
               headerShown: false,

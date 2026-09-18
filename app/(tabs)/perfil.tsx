@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabase';
 import { queryClient } from '@/lib/query';
 import type { Tables } from '@/lib/database.types';
 import { useAuth } from '@/features/auth/session';
+import { signOut } from '@/features/auth/signOut';
 import { abbreviateName } from '@/features/auth/abbreviate';
 import { LoginWall } from '@/features/auth/LoginWall';
 import { useMeusPontos, type PontoDaLista } from '@/features/ponto/useEditorPonto';
@@ -127,8 +128,53 @@ function SignedInProfile({ userId }: { userId: string }) {
 
         {/* Meus pontos: pontos mantidos, cada um leva à edição (§6.6). */}
         <MeusPontos userId={userId} />
+
+        {/* Sair da conta: remove o token de push deste aparelho antes de encerrar
+            a sessão (WP14, §7.5). */}
+        <SairDaConta />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SairDaConta() {
+  const [saindo, setSaindo] = useState(false);
+
+  function confirmar() {
+    Alert.alert('Sair da conta', 'Deseja encerrar a sessão neste aparelho?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          setSaindo(true);
+          try {
+            await signOut();
+          } catch (e) {
+            Alert.alert(
+              'Erro',
+              e instanceof Error ? e.message : 'Não deu para sair agora.'
+            );
+            setSaindo(false);
+          }
+        },
+      },
+    ]);
+  }
+
+  return (
+    <Pressable
+      onPress={confirmar}
+      disabled={saindo}
+      style={({ pressed }) => [styles.sairBtn, pressed && styles.sairBtnPressed]}
+      accessibilityRole="button"
+    >
+      {saindo ? (
+        <ActivityIndicator color={colors.alerta} />
+      ) : (
+        <Text style={styles.sairLabel}>Sair da conta</Text>
+      )}
+    </Pressable>
   );
 }
 
@@ -525,4 +571,18 @@ const styles = StyleSheet.create({
   pontoEndereco: { fontFamily: fonts.body, fontSize: 13, color: colors.textTertiary },
   pontoInativo: { fontFamily: fonts.body, fontSize: 12, color: colors.alerta },
   pontoSeta: { fontFamily: fonts.body, fontSize: 22, color: colors.textWeak },
+
+  sairBtn: {
+    minHeight: touch.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+  },
+  sairBtnPressed: { opacity: 0.6 },
+  sairLabel: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.alerta,
+  },
 });

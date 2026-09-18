@@ -28,6 +28,9 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     'expo-web-browser',
+    // Push de ponta a ponta (WP14, §7.5). Sem prop = usa o ícone/cor padrão;
+    // o canal Android é criado em runtime (features/notificacoes/push.ts).
+    'expo-notifications',
     // Login social nativo do Google (WP3). Lê os client ids via env.
     '@react-native-google-signin/google-signin',
     [
