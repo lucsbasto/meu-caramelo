@@ -40,6 +40,10 @@ const config: ExpoConfig = {
         RNMapboxMapsVersion: '11.23.1',
       },
     ],
+    // Push (WP14, §7.5). Plugin registra o canal Android e adiciona a
+    // permissão POST_NOTIFICATIONS (Android 13+). Sem opções = defaults;
+    // ícone/cor/som ficam para o slice de build quando os assets existirem.
+    'expo-notifications',
   ],
   extra: {
     eas: {
