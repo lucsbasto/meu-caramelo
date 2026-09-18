@@ -20,10 +20,14 @@ const RESEND_SECONDS = 60;
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { reason, next } = useLocalSearchParams<{
+  const { reason, next, mode } = useLocalSearchParams<{
     reason?: string;
     next?: string;
+    // Origem do onboarding (§6.1): 'cadastro' (Criar conta) ou 'entrada'
+    // (Já tenho conta). Só muda o texto — o fluxo de auth é o mesmo.
+    mode?: string;
   }>();
+  const cadastro = mode === 'cadastro';
   const { session } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -141,13 +145,17 @@ export default function LoginScreen() {
           >
             <Text style={styles.backLabel}>‹ Voltar</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>Entrar</Text>
+          <Text style={styles.headerTitle}>
+            {cadastro ? 'Criar conta' : 'Entrar'}
+          </Text>
         </View>
 
         <View style={styles.body}>
           <Text style={styles.context}>
             {reason ??
-              'Entre para participar. Dá para olhar o mapa sem entrar.'}
+              (cadastro
+                ? 'Crie sua conta para participar. Dá para olhar o mapa sem entrar.'
+                : 'Entre para participar. Dá para olhar o mapa sem entrar.')}
           </Text>
 
           {/* Botão Google (54 px, branco com borda) — §6.2. */}
