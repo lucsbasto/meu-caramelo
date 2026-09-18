@@ -19,7 +19,13 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 
 import { colors, fonts, radii, spacing, touch } from '@/theme';
+import { useAuth } from '@/features/auth/session';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
+import {
+  perguntarMotivoDenuncia,
+  useBloquear,
+  useDenunciar,
+} from '@/features/moderacao/useModeracao';
 import { CENTRO_PADRAO } from '@/features/mapa/MapaScreen';
 import type { Centro } from '@/features/mapa/usePontos';
 import { useFeed } from './useFeed';
@@ -38,7 +44,10 @@ const CHIPS: { escopo: EscopoFeed; rotulo: string }[] = [
 
 export default function ComunidadeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const requireAuth = useRequireAuth();
+  const denunciar = useDenunciar();
+  const bloquear = useBloquear();
   const centro = useCentroAtual();
   const [escopo, setEscopo] = useState<EscopoFeed>('perto');
 
@@ -113,6 +122,74 @@ export default function ComunidadeScreen() {
     Alert.alert('Em breve', 'Combinar quem cobre o pedido chega num próximo passo.');
   }
 
+  // Denunciar um registro do feed (§7.7): motivo opcional via action sheet.
+  // Pedido não é alvo de denúncia, então só registros têm esta ação.
+  function onDenunciarItem(item: ItemFeed) {
+    if (!requireAuth('Para denunciar, entre na sua conta.', `/registro/${item.id}`)) {
+      return;
+    }
+    const userId = user?.id;
+    if (!userId) return;
+    perguntarMotivoDenuncia((motivo) =>
+      denunciar.mutate(
+        { alvoTipo: 'registro', alvoId: item.id, userId, motivo },
+        {
+          onSuccess: () =>
+            Alert.alert('Obrigado', 'Recebemos sua denúncia e vamos revisar.'),
+          onError: () =>
+            Alert.alert('Não deu para denunciar', 'Tente de novo em instantes.'),
+        }
+      )
+    );
+  }
+
+  // Bloquear o autor do item: o feed_proximo filtra bloqueados no servidor, então
+  // o hook invalida ['feed'] no sucesso e o conteúdo dele some da lista.
+  function onBloquearItem(item: ItemFeed) {
+    if (!requireAuth('Para bloquear, entre na sua conta.', '/feed')) return;
+    const userId = user?.id;
+    if (!userId) return;
+    Alert.alert('Bloquear autor', 'Você não verá mais o conteúdo dele.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Bloquear',
+        style: 'destructive',
+        onPress: () =>
+          bloquear.mutate(
+            { userId, bloqueadoId: item.autorId },
+            {
+              onError: () =>
+                Alert.alert('Não deu para bloquear', 'Tente de novo em instantes.'),
+            }
+          ),
+      },
+    ]);
+  }
+
+  // Menu do cartão de registro: denunciar + bloquear autor.
+  function onMenuRegistro(item: ItemFeed) {
+    Alert.alert('Registro', undefined, [
+      { text: 'Denunciar', onPress: () => onDenunciarItem(item) },
+      { text: 'Bloquear autor', style: 'destructive', onPress: () => onBloquearItem(item) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }
+
+  // Menu do cartão de pedido: só bloquear (pedido não é alvo de denúncia).
+  function onMenuPedido(item: ItemFeed) {
+    Alert.alert('Pedido', undefined, [
+      { text: 'Bloquear autor', style: 'destructive', onPress: () => onBloquearItem(item) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }
+
+  // Não oferece moderar o próprio conteúdo — nem menu, nem bloqueio de si mesmo.
+  function menuDoItem(item: ItemFeed): (() => void) | undefined {
+    if (user?.id != null && user.id === item.autorId) return undefined;
+    if (item.formato === 'pedido') return () => onMenuPedido(item);
+    return () => onMenuRegistro(item);
+  }
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.cabecalho}>
@@ -153,6 +230,7 @@ export default function ComunidadeScreen() {
               onInteragir={() => onInteragir(item)}
               onCompartilhar={() => onCompartilhar(item)}
               onCobrir={() => onCobrir(item)}
+              onMenu={menuDoItem(item)}
             />
           )}
           refreshControl={
@@ -255,6 +333,7 @@ function Cartao({
   onInteragir,
   onCompartilhar,
   onCobrir,
+  onMenu,
 }: {
   item: ItemFeed;
   onAbrir: () => void;
@@ -262,9 +341,10 @@ function Cartao({
   onInteragir: () => void;
   onCompartilhar: () => void;
   onCobrir: () => void;
+  onMenu?: () => void;
 }) {
   if (item.formato === 'pedido') {
-    return <CartaoPedido item={item} onVerPonto={onVerPonto} onCobrir={onCobrir} />;
+    return <CartaoPedido item={item} onVerPonto={onVerPonto} onCobrir={onCobrir} onMenu={onMenu} />;
   }
   if (item.formato === 'evento') {
     return <CartaoEvento item={item} onAbrir={onAbrir} />;
@@ -275,6 +355,7 @@ function Cartao({
       onAbrir={onAbrir}
       onInteragir={onInteragir}
       onCompartilhar={onCompartilhar}
+      onMenu={onMenu}
     />
   );
 }
@@ -284,18 +365,20 @@ function CartaoRegistro({
   onAbrir,
   onInteragir,
   onCompartilhar,
+  onMenu,
 }: {
   item: ItemFeed;
   onAbrir: () => void;
   onInteragir: () => void;
   onCompartilhar: () => void;
+  onMenu?: () => void;
 }) {
   return (
     <Pressable
       onPress={onAbrir}
       style={({ pressed }) => [styles.cartao, pressed && styles.pressed]}
     >
-      <CabecalhoAutor item={item} selo="Alimentou" seloCor={colors.verde} />
+      <CabecalhoAutor item={item} selo="Alimentou" seloCor={colors.verde} onMenu={onMenu} />
 
       {item.texto ? <Text style={styles.texto}>{item.texto}</Text> : null}
 
@@ -334,15 +417,17 @@ function CartaoPedido({
   item,
   onVerPonto,
   onCobrir,
+  onMenu,
 }: {
   item: ItemFeed;
   onVerPonto: () => void;
   onCobrir: () => void;
+  onMenu?: () => void;
 }) {
   return (
     <View style={styles.cartao}>
       <View style={styles.faixaPedido} />
-      <CabecalhoAutor item={item} selo="Pediu ajuda" seloCor={colors.alerta} />
+      <CabecalhoAutor item={item} selo="Pediu ajuda" seloCor={colors.alerta} onMenu={onMenu} />
 
       {item.texto ? <Text style={styles.texto}>{item.texto}</Text> : null}
 
@@ -390,10 +475,12 @@ function CabecalhoAutor({
   item,
   selo,
   seloCor,
+  onMenu,
 }: {
   item: ItemFeed;
   selo: string;
   seloCor: string;
+  onMenu?: () => void;
 }) {
   return (
     <View style={styles.cabecalhoAutor}>
@@ -408,6 +495,17 @@ function CabecalhoAutor({
         <View style={[styles.seloPonto, { backgroundColor: seloCor }]} />
         <Text style={[styles.seloTexto, { color: seloCor }]}>{selo}</Text>
       </View>
+      {onMenu ? (
+        <Pressable
+          onPress={onMenu}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Mais opções"
+          style={({ pressed }) => [styles.kebab, pressed && styles.pressed]}
+        >
+          <Text style={styles.kebabIcone}>⋯</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -626,6 +724,8 @@ const styles = StyleSheet.create({
   },
   seloPonto: { width: 7, height: 7, borderRadius: 4 },
   seloTexto: { fontFamily: fonts.body, fontSize: 11, fontWeight: '700' },
+  kebab: { width: 28, height: touch.min, alignItems: 'center', justifyContent: 'center' },
+  kebabIcone: { fontSize: 20, color: colors.textSecondary },
 
   texto: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textSecondary },
   foto: { width: '100%', height: 118, borderRadius: radii.control, backgroundColor: colors.border },

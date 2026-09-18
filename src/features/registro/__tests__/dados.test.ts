@@ -55,6 +55,7 @@ describe('normalizarRegistroDetalhe', () => {
     observacao: 'deixei ração',
     foto_url: 'http://foto',
     tipos: ['racao'],
+    oculto: false,
     criado_em: '2026-03-12T07:10:00',
     profiles: { nome: 'Marina Cardoso', avatar_url: 'http://a' },
     pontos: { nome: 'Praça Central' },
@@ -81,6 +82,7 @@ describe('normalizarComentario', () => {
     registro_id: 'r1',
     autor_id: 'u2',
     texto: 'que fofo',
+    oculto: false,
     criado_em: '2026-03-12T08:00:00',
     profiles: { nome: 'João Pedro Silva', avatar_url: null },
   };
