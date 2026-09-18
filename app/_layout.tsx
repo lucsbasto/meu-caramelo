@@ -46,6 +46,8 @@ export default function RootLayout() {
             <Stack.Screen name="ponto/[id]/editar" />
             <Stack.Screen name="ponto/[id]/registrar" />
             <Stack.Screen name="ponto/[id]/mantenedores" />
+            {/* Detalhe do registro empilhado sobre o feed (§6.10). */}
+            <Stack.Screen name="registro/[id]" />
             {/* Busca empilhada sobre o mapa (§6.14). */}
             <Stack.Screen name="busca" />
             {/* Aceite de convite de co-mantenedor por deep-link (§7.4). */}

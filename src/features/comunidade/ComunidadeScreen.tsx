@@ -64,6 +64,12 @@ export default function ComunidadeScreen() {
     router.push(`/ponto/${item.pontoId}`);
   }
 
+  // Registro e evento levam ao detalhe do registro (§6.10); pedido não tem
+  // detalhe próprio e continua abrindo o ponto.
+  function abrirRegistro(item: ItemFeed) {
+    router.push(`/registro/${item.id}`);
+  }
+
   function onNotificacoes() {
     Alert.alert('Em breve', 'As notificações chegam num próximo passo.');
   }
@@ -90,13 +96,13 @@ export default function ComunidadeScreen() {
     }
   }
 
-  // Coração e comentários plenos ficam no #26: aqui a ação só exige login e
-  // abre o detalhe do registro (parede de login para visitante, §7.1).
+  // Coração e comentários plenos vivem no detalhe do registro (§6.10): a ação
+  // exige login (parede de §7.1) e abre a tela onde se reage e comenta.
   function onInteragir(item: ItemFeed) {
-    if (!requireAuth('Para reagir e comentar, entre na sua conta.', '/feed')) {
+    if (!requireAuth('Para reagir e comentar, entre na sua conta.', `/registro/${item.id}`)) {
       return;
     }
-    abrirPonto(item);
+    abrirRegistro(item);
   }
 
   // "Quero cobrir": o fluxo de cobrir é o #27; aqui garante login e sinaliza.
@@ -142,7 +148,8 @@ export default function ComunidadeScreen() {
           renderItem={({ item }) => (
             <Cartao
               item={item}
-              onAbrir={() => abrirPonto(item)}
+              onAbrir={() => abrirRegistro(item)}
+              onVerPonto={() => abrirPonto(item)}
               onInteragir={() => onInteragir(item)}
               onCompartilhar={() => onCompartilhar(item)}
               onCobrir={() => onCobrir(item)}
@@ -244,18 +251,20 @@ function Chips({
 function Cartao({
   item,
   onAbrir,
+  onVerPonto,
   onInteragir,
   onCompartilhar,
   onCobrir,
 }: {
   item: ItemFeed;
   onAbrir: () => void;
+  onVerPonto: () => void;
   onInteragir: () => void;
   onCompartilhar: () => void;
   onCobrir: () => void;
 }) {
   if (item.formato === 'pedido') {
-    return <CartaoPedido item={item} onVerPonto={onAbrir} onCobrir={onCobrir} />;
+    return <CartaoPedido item={item} onVerPonto={onVerPonto} onCobrir={onCobrir} />;
   }
   if (item.formato === 'evento') {
     return <CartaoEvento item={item} onAbrir={onAbrir} />;
