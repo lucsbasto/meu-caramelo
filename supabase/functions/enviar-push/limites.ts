@@ -4,6 +4,23 @@
 
 export type Payload = Record<string, unknown>;
 
+// Fuso default do envio (WP14 R2, mapa #38): São Paulo. `PUSH_TZ` sobrescreve.
+export const PUSH_TZ_PADRAO = 'America/Sao_Paulo';
+
+// Limite duro da Expo Push API: no máximo 100 mensagens por request (T1 #39).
+export const LOTE_EXPO_MAX = 100;
+
+// Fatia uma lista em pedaços de até `tamanho` itens, preservando a ordem.
+// Usado para nunca mandar mais de 100 mensagens num único request à Expo.
+export function emPedacos<T>(itens: T[], tamanho = LOTE_EXPO_MAX): T[][] {
+  if (tamanho < 1) throw new Error('tamanho do pedaco deve ser >= 1');
+  const pedacos: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) {
+    pedacos.push(itens.slice(i, i + tamanho));
+  }
+  return pedacos;
+}
+
 function str(v: unknown): string | null {
   return typeof v === 'string' && v.length > 0 ? v : null;
 }

@@ -5,6 +5,9 @@ import {
   podeEnviar,
   horaLocal,
   dataLocal,
+  emPedacos,
+  LOTE_EXPO_MAX,
+  PUSH_TZ_PADRAO,
 } from '../limites';
 
 const TZ = 'America/Araguaina'; // Palmas/TO, UTC-3, sem horário de verão
@@ -133,5 +136,67 @@ describe('podeEnviar (§7.5)', () => {
         enviadasHoje: 5,
       }).motivo
     ).toBe('teto_diario');
+  });
+});
+
+describe('fuso default (WP14 R2)', () => {
+  it('o default é America/Sao_Paulo', () => {
+    expect(PUSH_TZ_PADRAO).toBe('America/Sao_Paulo');
+  });
+
+  it('São Paulo silencia às 23h (fura silêncio só com pedido de ajuda de hoje)', () => {
+    // 02:00Z = 23:00 em São Paulo (UTC-3, sem horário de verão desde 2019)
+    const noiteSP = new Date('2026-01-15T02:00:00Z');
+    expect(horaLocal(noiteSP, PUSH_TZ_PADRAO)).toBe(23);
+    expect(
+      podeEnviar({
+        agora: noiteSP,
+        tz: PUSH_TZ_PADRAO,
+        tipo: 'registro',
+        payload: {},
+        enviadasHoje: 0,
+      }).motivo
+    ).toBe('silencio_noturno');
+    const hojeSP = dataLocal(noiteSP, PUSH_TZ_PADRAO);
+    expect(
+      podeEnviar({
+        agora: noiteSP,
+        tz: PUSH_TZ_PADRAO,
+        tipo: 'pedido_ajuda',
+        payload: { data_alvo: hojeSP },
+        enviadasHoje: 0,
+      })
+    ).toEqual({ enviar: true, motivo: 'ok' });
+  });
+});
+
+describe('emPedacos (chunking ≤100 para a Expo)', () => {
+  it('o limite exportado é 100', () => {
+    expect(LOTE_EXPO_MAX).toBe(100);
+  });
+
+  it('nunca gera pedaço maior que o limite', () => {
+    const itens = Array.from({ length: 250 }, (_, i) => i);
+    const pedacos = emPedacos(itens);
+    expect(pedacos).toHaveLength(3);
+    expect(pedacos.map((p) => p.length)).toEqual([100, 100, 50]);
+    expect(pedacos.every((p) => p.length <= LOTE_EXPO_MAX)).toBe(true);
+    expect(pedacos.flat()).toEqual(itens); // preserva ordem e conteúdo
+  });
+
+  it('lista menor que o limite vira um único pedaço', () => {
+    expect(emPedacos([1, 2, 3])).toEqual([[1, 2, 3]]);
+  });
+
+  it('lista vazia vira nenhum pedaço', () => {
+    expect(emPedacos([])).toEqual([]);
+  });
+
+  it('respeita um tamanho customizado', () => {
+    expect(emPedacos([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+  });
+
+  it('rejeita tamanho inválido', () => {
+    expect(() => emPedacos([1], 0)).toThrow();
   });
 });
