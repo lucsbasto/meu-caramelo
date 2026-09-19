@@ -5,6 +5,9 @@ import {
   podeEnviar,
   horaLocal,
   dataLocal,
+  dividirEmLotes,
+  LOTE_EXPO_MAX,
+  PUSH_TZ_PADRAO,
 } from '../limites';
 
 const TZ = 'America/Araguaina'; // Palmas/TO, UTC-3, sem horário de verão
@@ -138,5 +141,45 @@ describe('podeEnviar (§7.5)', () => {
         enviadasHoje: 5,
       }).motivo
     ).toBe('teto_diario');
+  });
+});
+
+describe('fuso padrão (fork do mapa #38)', () => {
+  it('o default do MVP é America/Sao_Paulo', () => {
+    expect(PUSH_TZ_PADRAO).toBe('America/Sao_Paulo');
+  });
+});
+
+describe('dividirEmLotes (limite de 100 msgs/request da Expo, T1 #39)', () => {
+  it('o teto de lote da Expo é 100', () => {
+    expect(LOTE_EXPO_MAX).toBe(100);
+  });
+
+  it('array vazio não gera lote', () => {
+    expect(dividirEmLotes([], LOTE_EXPO_MAX)).toEqual([]);
+  });
+
+  it('mantém em um único lote quando cabe', () => {
+    expect(dividirEmLotes([1, 2, 3], LOTE_EXPO_MAX)).toEqual([[1, 2, 3]]);
+  });
+
+  it('parte em pedaços de no máximo 100, na ordem', () => {
+    const itens = Array.from({ length: 250 }, (_, i) => i);
+    const lotes = dividirEmLotes(itens, LOTE_EXPO_MAX);
+    expect(lotes.map((l) => l.length)).toEqual([100, 100, 50]);
+    // nenhum lote excede o teto e a ordem é preservada
+    expect(lotes.every((l) => l.length <= LOTE_EXPO_MAX)).toBe(true);
+    expect(lotes.flat()).toEqual(itens);
+  });
+
+  it('lote exatamente igual ao teto vira um único pedaço', () => {
+    const itens = Array.from({ length: 100 }, (_, i) => i);
+    expect(dividirEmLotes(itens, LOTE_EXPO_MAX)).toHaveLength(1);
+  });
+
+  it('rejeita tamanho inválido', () => {
+    expect(() => dividirEmLotes([1], 0)).toThrow();
+    expect(() => dividirEmLotes([1], -1)).toThrow();
+    expect(() => dividirEmLotes([1], 1.5)).toThrow();
   });
 });

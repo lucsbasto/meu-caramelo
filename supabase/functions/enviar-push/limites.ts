@@ -9,8 +9,30 @@
 
 export type Payload = Record<string, unknown>;
 
+// Fuso fixo do MVP (BR) — fork travado no mapa #38: silêncio noturno e virada
+// do dia usam America/Sao_Paulo, sem tz por usuário. `PUSH_TZ` sobrescreve.
+export const PUSH_TZ_PADRAO = 'America/Sao_Paulo';
+
+// Expo Push API aceita no máximo 100 mensagens por request (T1 #39). O envio
+// divide os destinatários em lotes deste tamanho para nunca estourar o limite.
+export const LOTE_EXPO_MAX = 100;
+
 function str(v: unknown): string | null {
   return typeof v === 'string' && v.length > 0 ? v : null;
+}
+
+// Divide um array em pedaços de no máximo `tamanho`, preservando a ordem — usado
+// para respeitar o teto de 100 mensagens por request da Expo Push API. O último
+// pedaço pode ser menor; um array vazio produz nenhum lote.
+export function dividirEmLotes<T>(itens: T[], tamanho: number): T[][] {
+  if (!Number.isInteger(tamanho) || tamanho < 1) {
+    throw new Error('tamanho do lote deve ser inteiro >= 1');
+  }
+  const lotes: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) {
+    lotes.push(itens.slice(i, i + tamanho));
+  }
+  return lotes;
 }
 
 // Hora local (0–23) em um fuso, sem depender de libs externas.
