@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import {
-  linkPara,
+  dadosDeRota,
   conteudoPara,
   podeEnviar,
   horaLocal,
@@ -32,32 +32,30 @@ describe('horaLocal / dataLocal', () => {
   });
 });
 
-describe('linkPara (§4.5)', () => {
-  it('abre o ponto para tipos de ponto', () => {
-    expect(linkPara('ponto_vencido', { ponto_id: 'p1' })).toBe('/ponto/p1');
-    expect(linkPara('ponto_novo', { ponto_id: 'p2' })).toBe('/ponto/p2');
-    expect(linkPara('promovido_principal', { ponto_id: 'p3' })).toBe('/ponto/p3');
+describe('dadosDeRota — data cru { tipo, ...ids }', () => {
+  it('copia só os ids de rota presentes no payload (sem JOIN)', () => {
+    expect(dadosDeRota('ponto_vencido', { ponto_id: 'p1', foo: 'bar' })).toEqual({
+      tipo: 'ponto_vencido',
+      ponto_id: 'p1',
+    });
+    expect(dadosDeRota('pedido_ajuda', { pedido_id: 'pd1', data_alvo: '2026-01-15' })).toEqual({
+      tipo: 'pedido_ajuda',
+      pedido_id: 'pd1',
+    });
+    expect(dadosDeRota('comentario', { registro_id: 'r1' })).toEqual({
+      tipo: 'comentario',
+      registro_id: 'r1',
+    });
   });
 
-  it('abre o registro para registro/comentário', () => {
-    expect(linkPara('registro', { registro_id: 'r1' })).toBe('/registro/r1');
-    expect(linkPara('comentario', { registro_id: 'r2' })).toBe('/registro/r2');
+  it('não computa rota nem inclui link', () => {
+    const d = dadosDeRota('ponto_vencido', { ponto_id: 'p1' });
+    expect(d).not.toHaveProperty('link');
   });
 
-  it('abre o pedido para tipos de cobertura, com fallback para o ponto', () => {
-    expect(linkPara('pedido_ajuda', { pedido_id: 'pd1' })).toBe('/pedido/pd1');
-    expect(linkPara('cobertura_confirmada', { ponto_id: 'p9' })).toBe('/ponto/p9');
-  });
-
-  it('abre o convite pelo token', () => {
-    expect(linkPara('convite_comantenedor', { convite_token: 'abc' })).toBe(
-      '/convite/abc'
-    );
-  });
-
-  it('retorna null sem ids utilizáveis', () => {
-    expect(linkPara('registro', {})).toBeNull();
-    expect(linkPara('tipo_desconhecido', {})).toBeNull();
+  it('omite ids ausentes ou não-string', () => {
+    expect(dadosDeRota('ponto_vencido', {})).toEqual({ tipo: 'ponto_vencido' });
+    expect(dadosDeRota('ponto_vencido', { ponto_id: 42 })).toEqual({ tipo: 'ponto_vencido' });
   });
 });
 
@@ -66,8 +64,15 @@ describe('conteudoPara', () => {
     expect(conteudoPara('ponto_vencido', {}).titulo).toBe('Um ponto precisa de você');
   });
 
+  it('usa vocabulário canônico dos tipos §7.5', () => {
+    expect(conteudoPara('registro_em_ponto_seguido', {}).titulo).toBe(
+      'Novo registro em ponto seguido'
+    );
+    expect(conteudoPara('ponto_novo_por_perto', {}).titulo).toBe('Ponto novo por perto');
+  });
+
   it('permite override pelo payload', () => {
-    const c = conteudoPara('registro', { titulo: 'Oi', corpo: 'Tchau' });
+    const c = conteudoPara('registro_em_ponto_seguido', { titulo: 'Oi', corpo: 'Tchau' });
     expect(c).toEqual({ titulo: 'Oi', corpo: 'Tchau' });
   });
 
@@ -82,20 +87,20 @@ describe('podeEnviar (§7.5)', () => {
 
   it('envia durante o dia dentro do teto', () => {
     expect(
-      podeEnviar({ agora: dia, tz: TZ, tipo: 'registro', payload: {}, enviadasHoje: 0 })
+      podeEnviar({ agora: dia, tz: TZ, tipo: 'registro_em_ponto_seguido', payload: {}, enviadasHoje: 0 })
     ).toEqual({ enviar: true, motivo: 'ok' });
   });
 
   it('bloqueia ao atingir o teto diário de 5', () => {
     expect(
-      podeEnviar({ agora: dia, tz: TZ, tipo: 'registro', payload: {}, enviadasHoje: 5 })
+      podeEnviar({ agora: dia, tz: TZ, tipo: 'registro_em_ponto_seguido', payload: {}, enviadasHoje: 5 })
         .motivo
     ).toBe('teto_diario');
   });
 
   it('silencia entre 22h e 7h', () => {
     expect(
-      podeEnviar({ agora: noite, tz: TZ, tipo: 'registro', payload: {}, enviadasHoje: 0 })
+      podeEnviar({ agora: noite, tz: TZ, tipo: 'registro_em_ponto_seguido', payload: {}, enviadasHoje: 0 })
         .motivo
     ).toBe('silencio_noturno');
   });

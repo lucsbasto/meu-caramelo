@@ -16,9 +16,9 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   conteudoPara,
+  dadosDeRota,
   dataLocal,
   dividirEmLotes,
-  linkPara,
   LOTE_EXPO_MAX,
   podeEnviar,
   PUSH_TZ_PADRAO,
@@ -161,7 +161,9 @@ Deno.serve(async () => {
     }
 
     const { titulo, corpo } = conteudoPara(n.tipo, n.payload ?? {});
-    const link = linkPara(n.tipo, n.payload ?? {});
+    // Contrato T6 (#44): envia `{ tipo, ...ids }` cru; a rota §4.5 é resolvida no
+    // app a partir da tabela canônica (sem link pré-computado aqui).
+    const data = dadosDeRota(n.tipo, n.payload ?? {});
     // Par mensagem+token para manter o alinhamento de índice ao fatiar: o prune
     // de DeviceNotRegistered casa tickets[i] com o token que gerou a mensagem.
     const pares = tokens.map((to) => ({
@@ -172,7 +174,7 @@ Deno.serve(async () => {
         body: corpo,
         sound: 'default',
         channelId: 'default',
-        data: link ? { link } : {},
+        data,
       },
     }));
 
