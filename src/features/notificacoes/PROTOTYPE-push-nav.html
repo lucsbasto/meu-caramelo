@@ -1,0 +1,474 @@
+<!doctype html>
+<!--
+  PROTÓTIPO DESCARTÁVEL — NÃO É CÓDIGO DE PRODUÇÃO.
+  T8 (#46) do mapa WP14 (#38): fiação dos handlers de recebimento
+  foreground/background + navegação no toque via Expo Router.
+
+  Abra com dois cliques. Nada para instalar. O que interessa aqui é o
+  MODELO DE ESTADO (bloco <script id="modulo-puro">), que pode ser
+  levantado para o código real. O resto da página é só o palco.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Protótipo — Push: recebimento e navegação no toque</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --card: #ffffff;
+    --tinta: #2b2620;
+    --suave: #7a7168;
+    --linha: #e7e0d6;
+    --acento: #c9611f;      /* caramelo */
+    --acento-fraco: #f6e6d8;
+    --ok: #2f7d4f;
+    --alerta: #b23b3b;
+    --aviso: #a6791a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--tinta);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .sub { color: var(--suave); margin: 0 0 20px; }
+  .pergunta {
+    background: var(--acento-fraco); border: 1px solid #eccdb2;
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 22px; font-size: 14px;
+  }
+  .pergunta b { color: var(--acento); }
+  .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .grade { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border: 1px solid var(--linha);
+    border-radius: 14px; padding: 16px;
+  }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--suave); margin: 0 0 12px; }
+  .estado-linha { display: flex; justify-content: space-between; padding: 6px 0;
+    border-bottom: 1px dashed var(--linha); font-size: 14px; }
+  .estado-linha:last-child { border-bottom: 0; }
+  .estado-linha .rot { color: var(--suave); }
+  .estado-linha .val { font-weight: 600; text-align: right; }
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .pill.on { background: #e6f2ea; color: var(--ok); }
+  .pill.off { background: #f3ede4; color: var(--suave); }
+  .pill.warn { background: #fbf1d6; color: var(--aviso); }
+  .pill.bad { background: #f7e2e0; color: var(--alerta); }
+  button {
+    font: inherit; cursor: pointer; border: 1px solid var(--linha);
+    background: #fff; color: var(--tinta); border-radius: 9px;
+    padding: 8px 12px; margin: 0 6px 8px 0;
+  }
+  button:hover { border-color: var(--acento); }
+  button.acento { background: var(--acento); color: #fff; border-color: var(--acento); }
+  button.passo { display: block; width: 100%; text-align: left; margin: 0 0 8px; }
+  button.passo b { color: var(--acento); margin-right: 8px; }
+  select { font: inherit; padding: 7px 9px; border-radius: 9px; border: 1px solid var(--linha); background:#fff; }
+  .campo { margin-bottom: 10px; }
+  .campo label { display:block; font-size:12px; color: var(--suave); margin-bottom:4px; }
+  .abas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .abas button { margin: 0; font-size: 13px; padding: 6px 10px; }
+  .abas button.sel { background: var(--tinta); color:#fff; border-color: var(--tinta); }
+  .cenario-desc { font-size: 14px; color: var(--suave); margin: 0 0 12px; padding: 10px 12px;
+    background: #fbf9f5; border-left: 3px solid var(--acento); border-radius: 0 8px 8px 0; }
+  #log { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow:auto; }
+  #log li { padding: 5px 0; border-bottom: 1px dashed var(--linha); font-size: 13px; }
+  #log li .t { color: var(--suave); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  .mut { color: var(--suave); }
+  .nav-alvo { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .rodape { margin-top: 24px; font-size: 12px; color: var(--suave); }
+  code { background: #f3ede4; padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Push — recebimento e navegação no toque</h1>
+  <p class="sub">Protótipo de estado · WP14 T8 · aperte os botões e veja o que acontece</p>
+
+  <div class="pergunta">
+    <b>Pergunta que este protótipo responde:</b> quando uma notificação chega ou é
+    tocada, o app faz a coisa certa em cada situação — app aberto, em segundo plano,
+    ou fechado (aberto pelo toque)? E o toque navega para a tela correta,
+    <i>mesmo</i> quando o app ainda está carregando ou o usuário ainda não entrou?
+    O contrato do toque (T6 #44) é <code>data = {tipo, ...ids}</code>: a mensagem carrega
+    o <b>tipo</b> e os <b>ids crus</b>; a tabela <b>tipo → rota</b> mora aqui no app.
+  </div>
+
+  <div class="grade">
+    <!-- coluna esquerda: estado + controles -->
+    <div>
+      <div class="card" style="margin-bottom:20px">
+        <h2>Estado atual</h2>
+        <div id="estado"></div>
+      </div>
+
+      <div class="card">
+        <h2>Livre — aperte em qualquer ordem</h2>
+        <div class="campo">
+          <label>Payload da notificação (o que vem no <code>data</code>)</label>
+          <select id="payload"></select>
+        </div>
+        <div style="margin-bottom:10px">
+          <button data-ev="RECEBIDA">Chega notificação (app rodando)</button>
+          <button data-ev="TOCADA">Usuário toca a notificação</button>
+          <button data-ev="COLD_START">App estava morto → toque abre o app</button>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--linha);margin:10px 0">
+        <div>
+          <button data-ev="APP_ATIVO">App → ativo</button>
+          <button data-ev="APP_BACKGROUND">App → segundo plano</button>
+          <button data-ev="APP_MORTO">App → morto</button>
+        </div>
+        <div>
+          <button data-ev="ROUTER_PRONTO">Router pronto</button>
+          <button data-ev="AUTH_LOGADO">Auth resolveu: logado</button>
+          <button data-ev="AUTH_DESLOGADO">Auth resolveu: deslogado</button>
+          <button data-ev="LOGIN_OK">Login concluído</button>
+        </div>
+        <div style="margin-top:8px">
+          <button data-ev="RESET">↺ Reiniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- coluna direita: cenários guiados + log -->
+    <div>
+      <div class="card" style="margin-bottom:20px">
+        <h2>Roteiros guiados</h2>
+        <div class="abas" id="abas"></div>
+        <p class="cenario-desc" id="cenario-desc"></p>
+        <div id="cenario-passos"></div>
+      </div>
+
+      <div class="card">
+        <h2>O que aconteceu</h2>
+        <ul id="log"></ul>
+      </div>
+    </div>
+  </div>
+
+  <p class="rodape">
+    Protótipo descartável (T8 #46). O bloco <code>#modulo-puro</code> é o que se leva
+    para o código real: <code>resolverDeepLink(data)</code> + o reducer
+    <code>reduzir(ctx, acao)</code>. A página é palco.
+  </p>
+</main>
+
+<!-- =========================================================================
+     MÓDULO PURO — liftável para o código real. Sem DOM, sem document.
+     ========================================================================= -->
+<script id="modulo-puro">
+// --- Config do handler de foreground (setNotificationHandler) -----------------
+// DECISÃO (T8): com app ABERTO, NÃO mostra banner do SO — o app exibe um
+// toast in-app a partir do addNotificationReceivedListener. Fora do foreground
+// a bandeja do SO cuida do banner normalmente.
+const HANDLER_FOREGROUND = {
+  shouldShowBanner: false,  // sem balão nativo por cima do app aberto
+  shouldShowList:   true,   // ainda entra na central de notificações
+  shouldPlaySound:  false,  // silencioso no foreground; toast já avisa
+  shouldSetBadge:   false,  // sem contador de badge no MVP
+};
+
+// --- Tabela tipo → rota (T6 #44). Mora no APP, não na Edge Function. ----------
+// `existe:false` = rota do contrato T6 que AINDA não foi criada no app
+// (hoje só existem /ponto/[id]* e /convite/[token]). Sinal para slices futuros.
+const TABELA_ROTA = {
+  ponto_vencido:             { idKey: 'ponto_id',    rota: '/ponto/[id]' },
+  ponto_novo_por_perto:      { idKey: 'ponto_id',    rota: '/ponto/[id]' },
+  lembrete_cobertura:        { idKey: 'ponto_id',    rota: '/ponto/[id]/registrar' },
+  pedido_ajuda:              { idKey: 'pedido_id',   rota: '/pedido/[id]',   existe: false },
+  cobertura_confirmada:      { idKey: 'pedido_id',   rota: '/pedido/[id]',   existe: false },
+  registro_em_ponto_seguido: { idKey: 'registro_id', rota: '/registro/[id]', existe: false },
+  comentario:                { idKey: 'registro_id', rota: '/registro/[id]', existe: false },
+};
+
+// resolverDeepLink: data cru → destino de navegação, ou motivo de descarte.
+// Pura. Não navega — só decide para onde.
+function resolverDeepLink(data) {
+  if (!data || typeof data.tipo !== 'string')
+    return { status: 'invalido', motivo: 'sem tipo no payload' };
+  const entrada = TABELA_ROTA[data.tipo];
+  if (!entrada)
+    return { status: 'desconhecido', tipo: data.tipo };
+  const id = data[entrada.idKey];
+  if (id === undefined || id === null || id === '')
+    return { status: 'invalido', motivo: `sem ${entrada.idKey} no payload` };
+  return {
+    status: 'ok',
+    tipo: data.tipo,
+    rota: entrada.rota,
+    params: { id: String(id) },
+    alvo: entrada.rota.replace('[id]', String(id)),
+    rotaExiste: entrada.existe !== false,
+  };
+}
+
+// assinatura de uma resposta, para deduplicar cold-start vs listener de toque.
+function assinatura(data) {
+  return data && data.msg_id != null ? `id:${data.msg_id}` : `json:${JSON.stringify(data)}`;
+}
+
+// gate: só dá para navegar com router montado E sessão de auth conhecida E logado.
+function podeNavegar(ctx) {
+  return ctx.routerPronto && ctx.authResolvido && ctx.logado;
+}
+function motivoGate(ctx) {
+  if (!ctx.routerPronto) return 'router ainda montando';
+  if (!ctx.authResolvido) return 'sessão de auth ainda desconhecida';
+  if (!ctx.logado) return 'usuário deslogado (precisa entrar)';
+  return null;
+}
+
+function estadoInicial() {
+  return {
+    appEstado: 'ativo',      // 'ativo' | 'background' | 'morto'
+    routerPronto: true,
+    authResolvido: true,
+    logado: true,
+    bannerVisivel: null,     // {alvo} | null  — só no foreground
+    navPendente: null,       // {data} segurado até o gate abrir
+    ultimaNav: null,         // {alvo} da última navegação efetivada
+    sigColdStartPendente: null, // assinatura que abriu o app, aguardando dedupe do toque
+    _log: [],
+  };
+}
+
+// tenta navegar já; se o gate estiver fechado, segura em navPendente.
+function tentarNavegar(ctx, data, origem) {
+  const r = resolverDeepLink(data);
+  if (r.status === 'invalido') {
+    ctx._log.push({ nivel: 'bad', txt: `Descartado (${origem}): ${r.motivo}. App fica onde está.` });
+    return ctx;
+  }
+  if (r.status === 'desconhecido') {
+    ctx._log.push({ nivel: 'warn', txt: `Tipo desconhecido "${r.tipo}" (${origem}): sem navegação, fica na home. Sem crash.` });
+    return ctx;
+  }
+  if (!podeNavegar(ctx)) {
+    ctx.navPendente = { data };
+    ctx._log.push({ nivel: 'warn', txt: `Navegação SEGURADA (${origem}) → ${r.alvo}. Motivo: ${motivoGate(ctx)}.` });
+    return ctx;
+  }
+  ctx.ultimaNav = { alvo: r.alvo };
+  ctx.bannerVisivel = null;
+  const aviso = r.rotaExiste ? '' : '  ⚠ rota ainda não existe no app (T6 lista, slice futuro cria)';
+  ctx._log.push({ nivel: r.rotaExiste ? 'ok' : 'warn', txt: `Navegou (${origem}) → ${r.alvo}${aviso}` });
+  return ctx;
+}
+
+// flush: quando o gate abre, se havia navegação pendente, executa.
+function flushPendente(ctx, origem) {
+  if (ctx.navPendente && podeNavegar(ctx)) {
+    const data = ctx.navPendente.data;
+    ctx.navPendente = null;
+    ctx._log.push({ nivel: 'ok', txt: `Gate abriu (${origem}): liberando navegação segurada.` });
+    return tentarNavegar(ctx, data, 'flush');
+  }
+  return ctx;
+}
+
+// REDUCER puro: (ctx, acao) => ctx
+function reduzir(ctx, acao) {
+  const c = JSON.parse(JSON.stringify(ctx));
+  c._log = ctx._log.slice();
+  switch (acao.tipo) {
+    case 'APP_ATIVO':      c.appEstado = 'ativo';      c._log.push({txt:'App em primeiro plano.'}); break;
+    case 'APP_BACKGROUND': c.appEstado = 'background';  c.bannerVisivel = null; c._log.push({txt:'App foi para segundo plano.'}); break;
+    case 'APP_MORTO':      c.appEstado = 'morto';       c.bannerVisivel = null;
+                           c.routerPronto = false; c.authResolvido = false;
+                           c._log.push({txt:'App morto (router e auth zerados até o próximo boot).'}); break;
+
+    case 'ROUTER_PRONTO':  c.routerPronto = true;  c._log.push({txt:'Router montado.'}); return flushPendente(c, 'router pronto');
+    case 'AUTH_LOGADO':    c.authResolvido = true; c.logado = true;  c._log.push({txt:'Auth resolveu: logado.'}); return flushPendente(c, 'auth logado');
+    case 'AUTH_DESLOGADO': c.authResolvido = true; c.logado = false; c._log.push({txt:'Auth resolveu: deslogado.'}); return c;
+    case 'LOGIN_OK':       c.logado = true; c.authResolvido = true; c._log.push({txt:'Login concluído.'}); return flushPendente(c, 'login ok');
+
+    case 'RECEBIDA': {
+      // addNotificationReceivedListener + setNotificationHandler.
+      // Só dispara JS com o app RODANDO. Em background/morto é a bandeja do SO.
+      if (c.appEstado === 'ativo') {
+        const r = resolverDeepLink(acao.data);
+        c.bannerVisivel = { alvo: r.status === 'ok' ? r.alvo : '(payload sem rota)' };
+        c._log.push({txt:`Chegou com app aberto → TOAST in-app (banner do SO suprimido). SEM navegar.`});
+      } else {
+        c._log.push({nivel:'mut', txt:`Chegou com app ${c.appEstado} → bandeja do SO. Nenhum JS roda ainda.`});
+      }
+      return c;
+    }
+
+    case 'TOCADA': {
+      // addNotificationResponseReceivedListener — foreground OU background.
+      const sig = assinatura(acao.data);
+      if (c.sigColdStartPendente && c.sigColdStartPendente === sig) {
+        c.sigColdStartPendente = null;
+        c._log.push({nivel:'mut', txt:'Toque duplicado da resposta que abriu o app → ignorado (dedupe cold-start).'});
+        return c;
+      }
+      return tentarNavegar(c, acao.data, 'toque');
+    }
+
+    case 'COLD_START': {
+      // getLastNotificationResponseAsync no boot: a resposta que abriu o app.
+      c.appEstado = 'ativo';
+      c.sigColdStartPendente = assinatura(acao.data);
+      c._log.push({txt:'Boot por toque na bandeja (cold start): lendo resposta inicial.'});
+      return tentarNavegar(c, acao.data, 'cold start');
+    }
+
+    case 'RESET': return estadoInicial();
+    default: return c;
+  }
+  return c;
+}
+</script>
+
+<!-- =========================================================================
+     PALCO — throwaway. Só liga botões ao módulo puro e desenha o estado.
+     ========================================================================= -->
+<script id="palco">
+const PAYLOADS = {
+  'ponto_vencido (ponto_id: 42)':            { tipo:'ponto_vencido', ponto_id:42, msg_id:'m1' },
+  'lembrete_cobertura (ponto_id: 42)':       { tipo:'lembrete_cobertura', ponto_id:42, msg_id:'m2' },
+  'ponto_novo_por_perto (ponto_id: 7)':      { tipo:'ponto_novo_por_perto', ponto_id:7, msg_id:'m3' },
+  'pedido_ajuda (pedido_id: 9) [rota nova]': { tipo:'pedido_ajuda', pedido_id:9, msg_id:'m4' },
+  'comentario (registro_id: 55) [rota nova]':{ tipo:'comentario', registro_id:55, msg_id:'m5' },
+  'tipo DESCONHECIDO (futuro)':              { tipo:'novo_tipo_qualquer', ponto_id:1, msg_id:'m6' },
+  'payload SEM tipo (malformado)':           { ponto_id:1, msg_id:'m7' },
+  'ponto_vencido SEM id (malformado)':       { tipo:'ponto_vencido', msg_id:'m8' },
+};
+
+const CENARIOS = [
+  { nome:'App aberto',
+    desc:'App em primeiro plano. A notificação chega → aparece banner, mas NÃO navega. Só o toque navega.',
+    passos:[
+      ['App → ativo', {tipo:'APP_ATIVO'}],
+      ['Chega notificação (ponto_vencido)', {tipo:'RECEBIDA', payload:'ponto_vencido (ponto_id: 42)'}],
+      ['Usuário toca', {tipo:'TOCADA', payload:'ponto_vencido (ponto_id: 42)'}],
+    ]},
+  { nome:'Em background',
+    desc:'App em segundo plano. A notificação vai para a bandeja do SO (nenhum JS roda). O toque abre o app e navega direto.',
+    passos:[
+      ['App → segundo plano', {tipo:'APP_BACKGROUND'}],
+      ['Chega notificação (bandeja)', {tipo:'RECEBIDA', payload:'lembrete_cobertura (ponto_id: 42)'}],
+      ['Usuário toca a bandeja', {tipo:'TOCADA', payload:'lembrete_cobertura (ponto_id: 42)'}],
+    ]},
+  { nome:'Cold start (logado)',
+    desc:'App morto. O toque na bandeja abre o app. A navegação é SEGURADA até router montar e a sessão resolver — só então navega.',
+    passos:[
+      ['App → morto', {tipo:'APP_MORTO'}],
+      ['Toque abre o app (cold start)', {tipo:'COLD_START', payload:'ponto_novo_por_perto (ponto_id: 7)'}],
+      ['Router pronto', {tipo:'ROUTER_PRONTO'}],
+      ['Auth resolveu: logado', {tipo:'AUTH_LOGADO'}],
+    ]},
+  { nome:'Cold start (deslogado)',
+    desc:'Mesmo cold start, mas a sessão resolve DESLOGADO. A navegação fica segurada durante o login e só dispara depois que o usuário entra.',
+    passos:[
+      ['App → morto', {tipo:'APP_MORTO'}],
+      ['Toque abre o app (cold start)', {tipo:'COLD_START', payload:'pedido_ajuda (pedido_id: 9) [rota nova]'}],
+      ['Router pronto', {tipo:'ROUTER_PRONTO'}],
+      ['Auth resolveu: deslogado', {tipo:'AUTH_DESLOGADO'}],
+      ['Login concluído', {tipo:'LOGIN_OK'}],
+    ]},
+  { nome:'Tipo desconhecido',
+    desc:'Chega um tipo que o app (versão antiga) não conhece. Deve ficar na home, sem crash.',
+    passos:[
+      ['App → ativo', {tipo:'APP_ATIVO'}],
+      ['Toca notificação de tipo novo', {tipo:'TOCADA', payload:'tipo DESCONHECIDO (futuro)'}],
+    ]},
+  { nome:'Payload malformado',
+    desc:'Payloads sem tipo ou sem id são descartados com segurança — nunca navega para lugar nenhum.',
+    passos:[
+      ['App → ativo', {tipo:'APP_ATIVO'}],
+      ['Toca payload sem tipo', {tipo:'TOCADA', payload:'payload SEM tipo (malformado)'}],
+      ['Toca payload sem id', {tipo:'TOCADA', payload:'ponto_vencido SEM id (malformado)'}],
+    ]},
+  { nome:'Dedupe cold start',
+    desc:'No boot, a MESMA resposta pode disparar o cold start E o listener de toque. Navega uma vez só.',
+    passos:[
+      ['App → morto', {tipo:'APP_MORTO'}],
+      ['Cold start (ponto_vencido)', {tipo:'COLD_START', payload:'ponto_vencido (ponto_id: 42)'}],
+      ['Router pronto', {tipo:'ROUTER_PRONTO'}],
+      ['Auth logado', {tipo:'AUTH_LOGADO'}],
+      ['Listener de toque dispara a MESMA resposta', {tipo:'TOCADA', payload:'ponto_vencido (ponto_id: 42)'}],
+    ]},
+];
+
+let ctx = estadoInicial();
+let cenarioSel = 0;
+
+const $ = (s) => document.querySelector(s);
+const payloadSel = $('#payload');
+Object.keys(PAYLOADS).forEach(k => {
+  const o = document.createElement('option'); o.value = k; o.textContent = k; payloadSel.appendChild(o);
+});
+
+function pill(on, txtOn, txtOff, cls) {
+  return `<span class="pill ${on ? (cls||'on') : 'off'}">${on ? txtOn : txtOff}</span>`;
+}
+
+function desenharEstado() {
+  const gate = podeNavegar(ctx);
+  const appPill = { ativo:'on', background:'warn', morto:'bad' }[ctx.appEstado];
+  $('#estado').innerHTML = `
+    <div class="estado-linha"><span class="rot">App</span><span class="val"><span class="pill ${appPill}">${ctx.appEstado}</span></span></div>
+    <div class="estado-linha"><span class="rot">Router</span><span class="val">${pill(ctx.routerPronto,'montado','montando')}</span></div>
+    <div class="estado-linha"><span class="rot">Sessão de auth</span><span class="val">${ctx.authResolvido ? pill(ctx.logado,'logado','deslogado', ctx.logado?'on':'bad') : '<span class="pill off">desconhecida</span>'}</span></div>
+    <div class="estado-linha"><span class="rot">Gate de navegação</span><span class="val">${pill(gate,'ABERTO','FECHADO', gate?'on':'warn')}</span></div>
+    <div class="estado-linha"><span class="rot">Toast in-app</span><span class="val nav-alvo">${ctx.bannerVisivel ? ctx.bannerVisivel.alvo : '—'}</span></div>
+    <div class="estado-linha"><span class="rot">Navegação segurada</span><span class="val nav-alvo">${ctx.navPendente ? (resolverDeepLink(ctx.navPendente.data).alvo || '?') : '—'}</span></div>
+    <div class="estado-linha"><span class="rot">Última navegação</span><span class="val nav-alvo">${ctx.ultimaNav ? ctx.ultimaNav.alvo : '—'}</span></div>
+  `;
+}
+
+function desenharLog() {
+  const cor = { ok:'var(--ok)', bad:'var(--alerta)', warn:'var(--aviso)', mut:'var(--suave)' };
+  $('#log').innerHTML = ctx._log.slice(-40).reverse().map((l,i) => {
+    const n = ctx._log.length - i;
+    return `<li><span class="t">${String(n).padStart(2,'0')}</span><span style="color:${cor[l.nivel]||'inherit'}">${l.txt}</span></li>`;
+  }).join('') || '<li class="mut">Nenhuma ação ainda.</li>';
+}
+
+function despachar(acao) { ctx = reduzir(ctx, acao); render(); }
+
+function acaoDeEvento(ev) {
+  if (['RECEBIDA','TOCADA','COLD_START'].includes(ev))
+    return { tipo: ev, data: PAYLOADS[payloadSel.value] };
+  const mapa = { APP_ATIVO:'APP_ATIVO', APP_BACKGROUND:'APP_BACKGROUND', APP_MORTO:'APP_MORTO',
+    ROUTER_PRONTO:'ROUTER_PRONTO', AUTH_LOGADO:'AUTH_LOGADO', AUTH_DESLOGADO:'AUTH_DESLOGADO',
+    LOGIN_OK:'LOGIN_OK', RESET:'RESET' };
+  return { tipo: mapa[ev] };
+}
+
+document.querySelectorAll('[data-ev]').forEach(b =>
+  b.addEventListener('click', () => despachar(acaoDeEvento(b.dataset.ev))));
+
+function desenharAbas() {
+  $('#abas').innerHTML = CENARIOS.map((c,i) =>
+    `<button data-cen="${i}" class="${i===cenarioSel?'sel':''}">${c.nome}</button>`).join('');
+  document.querySelectorAll('[data-cen]').forEach(b =>
+    b.addEventListener('click', () => { cenarioSel = +b.dataset.cen; ctx = estadoInicial(); render(); }));
+}
+
+function desenharCenario() {
+  const c = CENARIOS[cenarioSel];
+  $('#cenario-desc').textContent = c.desc;
+  $('#cenario-passos').innerHTML = c.passos.map((p,i) =>
+    `<button class="passo" data-passo="${i}"><b>${i+1}</b>${p[0]}</button>`).join('');
+  document.querySelectorAll('[data-passo]').forEach(b =>
+    b.addEventListener('click', () => {
+      const passo = CENARIOS[cenarioSel].passos[+b.dataset.passo];
+      const acao = { ...passo[1] };
+      if (acao.payload) { acao.data = PAYLOADS[acao.payload]; delete acao.payload; }
+      despachar(acao);
+    }));
+}
+
+function render() { desenharEstado(); desenharLog(); desenharAbas(); desenharCenario(); }
+render();
+</script>
+</body>
+</html>
