@@ -1,0 +1,52 @@
+#!/bin/sh
+# Parallel-session workflow guard.
+# Enforces: task work happens in a dedicated worktree, on its own branch,
+# in its own session. The primary repo stays on main (integration only);
+# main receives changes via PR merge, never a local commit.
+#
+# Bypass note: local hooks can be skipped with --no-verify. That is a
+# knowing violation of docs/dev-flow (Root-Cause vs Patch: no hook bypass).
+# The un-bypassable layer is GitHub branch protection (server-side).
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+# Detached HEAD (rebase / bisect / cherry-pick in progress) — let git proceed.
+[ -z "$branch" ] && exit 0
+
+# 1. Commits must originate from a linked worktree, not the primary repo.
+git_dir=$(git rev-parse --git-dir)
+case "$git_dir" in
+  *"/worktrees/"*) ;; # linked worktree — OK
+  *)
+    echo "BLOCKED: commit from the primary repo working tree."
+    echo "Each task runs in its own worktree + session."
+    echo "  pnpm new-task <type> <slug>"
+    echo "The primary repo stays on main; main changes land via PR merge."
+    exit 1
+    ;;
+esac
+
+# 2. Never commit directly to a protected branch.
+case "$branch" in
+  main|master|release|release/*)
+    echo "BLOCKED: direct commit to protected branch '$branch'."
+    echo "Create a task branch+worktree; land changes via PR merge."
+    exit 1
+    ;;
+esac
+
+# 3. Branch naming: <user>/<type>/<slug>, slug kebab-case, <=40 chars.
+if ! printf '%s' "$branch" | grep -Eq '^[a-z0-9]+/(feat|fix|refactor|chore|docs|test|perf)/[a-z0-9]+(-[a-z0-9]+)*$'; then
+  echo "BLOCKED: branch '$branch' violates naming <user>/<type>/<slug>."
+  echo "  type in feat|fix|refactor|chore|docs|test|perf ; slug kebab-case."
+  echo "  e.g. lucas/feat/oauth-pkce"
+  exit 1
+fi
+
+slug=${branch##*/}
+if [ ${#slug} -gt 40 ]; then
+  echo "BLOCKED: slug '$slug' longer than 40 chars."
+  exit 1
+fi
+
+exit 0

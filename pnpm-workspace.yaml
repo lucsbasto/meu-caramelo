@@ -1,5 +1,13 @@
+# Windows: short virtual store path so deep native (.pnpm) source paths stay
+# under CMake/ninja's ~250-char object-path limit on Android builds.
+virtualStoreDir: D:/ps
+nodeLinker: hoisted
+# Native builds kept OFF: enabling @parcel/watcher hangs the jest runner on
+# Windows (haste-map/watcher). Watch is slightly slower (polling) but the test
+# runner stays fast and reliable. Do not flip to true without re-verifying jest.
 allowBuilds:
-  unrs-resolver: set this to true or false
+  '@parcel/watcher': false
+  unrs-resolver: false
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.25'
   - '@expo/router-server@57.0.10'

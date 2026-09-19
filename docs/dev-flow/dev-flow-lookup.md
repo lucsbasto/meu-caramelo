@@ -110,6 +110,10 @@ Question → note. Substring-search this file for fastest match. Wikilinks resol
 | How to name a branch? | [[Branch Hygiene]] |
 | Rebase or merge? | [[Branch Hygiene]] |
 | Can I force-push? | [[Branch Hygiene]] |
+| How to work on multiple tasks in parallel? | [[Parallel Worktree Sessions]] |
+| Should I use a worktree per task? | [[Parallel Worktree Sessions]] |
+| How to run parallel sessions? | [[Parallel Worktree Sessions]] |
+| Can I commit from the primary repo? | [[Parallel Worktree Sessions]] |
 
 ## Stack
 
