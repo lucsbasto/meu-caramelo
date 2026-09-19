@@ -4,18 +4,29 @@ Edge Function que transforma linhas de `notificacoes` em push pela Expo Push API
 
 ## O que faz
 
-1. Varre `notificacoes` com `push_enviado_em is null` criadas nas últimas 24h.
+1. Varre `notificacoes` com `push_status = 'pending'` criadas nas últimas 24h.
 2. Para cada uma, aplica as regras da §7.5 (`limites.ts`):
    - teto de **5 push por usuário por dia** (fuso `PUSH_TZ`);
    - **silêncio 22h–7h**, exceto `pedido_ajuda` com `data_alvo` = hoje.
 3. Monta título/corpo (`conteudoPara`) e o deep link `data.link` (§4.5, `linkPara`)
    e envia para todos os `device_tokens` do usuário.
-4. Marca `push_enviado_em` nas enviadas e apaga tokens `DeviceNotRegistered`.
+4. Marca o estado terminal e apaga tokens `DeviceNotRegistered`.
+
+## Estado do push (`push_status`)
+
+Cada linha de `notificacoes` carrega o rastreio de push:
+
+- `pending` — na fila (default), varrida pela função.
+- `sent` — enviada; `push_enviado_em` guarda o carimbo do horário.
+- `failed` — falha terminal; `push_erro` guarda a mensagem, `push_tentativas`
+  conta as tentativas. Sem retry silencioso.
+- `skipped` — fora da janela de envio de 24h (backfill de linhas antigas).
 
 A varredura é segura para concorrência: antes de enviar, cada linha é
-**reivindicada** com um update condicional (`push_enviado_em` só se ainda for
-`null`). Execuções sobrepostas (cron + webhook, ou ticks concorrentes) não
-duplicam push; se o envio falhar, a linha volta para a fila. Pode ser chamada
+**reivindicada** com um update condicional (`push_status = 'sent'` só se ainda
+estiver `'pending'`), que também incrementa `push_tentativas`. Execuções
+sobrepostas (cron + webhook, ou ticks concorrentes) não duplicam push; se o
+envio falhar, a linha vira `'failed'` com a trilha do erro. Pode ser chamada
 por cron ou por database webhook no INSERT de `notificacoes`.
 
 ## Secrets

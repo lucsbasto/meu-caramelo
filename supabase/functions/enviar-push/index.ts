@@ -1,13 +1,14 @@
 // Edge Function `enviar-push` (WP14, §7.5).
 //
-// Varre as linhas pendentes de `notificacoes` (push_enviado_em is null),
+// Varre as linhas pendentes de `notificacoes` (push_status = 'pending'),
 // aplica o teto diário e o silêncio noturno (limites.ts), dispara push pela
-// Expo Push API para os device_tokens do usuário e marca as enviadas.
+// Expo Push API para os device_tokens do usuário e marca o estado terminal:
+// 'sent' no sucesso, 'failed' (com `push_erro` e `push_tentativas`) na falha.
 //
 // Roda com service role (lê notificacoes/device_tokens de todos os usuários e
-// escreve push_enviado_em — a RLS não se aplica). Invoque por cron/agendador
-// (ex.: a cada minuto) ou por database webhook no INSERT de `notificacoes`;
-// como a varredura é idempotente, o gatilho é indiferente.
+// escreve push_status/push_enviado_em — a RLS não se aplica). Invoque por
+// cron/agendador (ex.: a cada minuto) ou por database webhook no INSERT de
+// `notificacoes`; como a varredura é idempotente, o gatilho é indiferente.
 //
 // Secrets esperados: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (injetados pela
 // plataforma), PUSH_TZ (default America/Araguaina), EXPO_ACCESS_TOKEN (opcional).
@@ -31,6 +32,7 @@ type NotifPendente = {
   tipo: string;
   payload: Payload;
   criado_em: string;
+  push_tentativas: number;
 };
 
 function json(body: unknown, status = 200): Response {
@@ -56,8 +58,8 @@ Deno.serve(async () => {
 
   const { data: pendentes, error } = await supabase
     .from('notificacoes')
-    .select('id, user_id, tipo, payload, criado_em')
-    .is('push_enviado_em', null)
+    .select('id, user_id, tipo, payload, criado_em, push_tentativas')
+    .eq('push_status', 'pending')
     .gte('criado_em', desde)
     .order('criado_em', { ascending: true })
     .limit(LOTE);
@@ -76,6 +78,7 @@ Deno.serve(async () => {
       .from('notificacoes')
       .select('push_enviado_em')
       .eq('user_id', userId)
+      .eq('push_status', 'sent')
       .gte('push_enviado_em', new Date(agora.getTime() - 36 * 3600 * 1000).toISOString());
     const n = (data ?? []).filter(
       (r) =>
@@ -125,15 +128,20 @@ Deno.serve(async () => {
       continue;
     }
 
-    // Claim atômico ANTES do envio: marca push_enviado_em só se ainda estiver
-    // null. Se outra execução (cron + webhook, ou ticks sobrepostos) já pegou a
-    // linha, o update não afeta nada e pulamos — evita push duplicado.
+    // Claim atômico ANTES do envio: move 'pending' → 'sent' (otimista) só se a
+    // linha ainda estiver 'pending', carimba push_enviado_em e incrementa a
+    // tentativa. Se outra execução (cron + webhook, ou ticks sobrepostos) já
+    // pegou a linha, o update não afeta nada e pulamos — evita push duplicado.
     const marcadoEm = new Date().toISOString();
     const { data: claim } = await supabase
       .from('notificacoes')
-      .update({ push_enviado_em: marcadoEm })
+      .update({
+        push_status: 'sent',
+        push_enviado_em: marcadoEm,
+        push_tentativas: (n.push_tentativas ?? 0) + 1,
+      })
       .eq('id', n.id)
-      .is('push_enviado_em', null)
+      .eq('push_status', 'pending')
       .select('id');
     if (!claim || claim.length === 0) {
       ignorados++;
@@ -168,8 +176,7 @@ Deno.serve(async () => {
       // Best-effort: remove tokens mortos que a Expo já sinalize no ticket de
       // envio (DeviceNotRegistered). A confirmação definitiva vem no recibo
       // assíncrono (getPushNotificationReceiptsAsync) — polling de recibo fica
-      // para follow-up; enquanto isso, um token morto some quando o envio
-      // seguinte falhar todos os tickets e a linha for devolvida à fila.
+      // para follow-up.
       const tickets = Array.isArray(corpoResp?.data) ? corpoResp.data : [];
       for (let i = 0; i < tickets.length; i++) {
         const err = tickets[i]?.details?.error;
@@ -178,8 +185,8 @@ Deno.serve(async () => {
         }
       }
 
-      // Sucesso = HTTP ok e ao menos um ticket aceito. Caso contrário devolve a
-      // linha à fila (unclaim) para reprocessar; a janela de 24h limita o retry.
+      // Sucesso = HTTP ok e ao menos um ticket aceito. Caso contrário marca
+      // 'failed' com a trilha de erro (estado terminal, sem retry silencioso).
       const algumOk =
         tickets.length === 0
           ? resp.ok
@@ -189,18 +196,23 @@ Deno.serve(async () => {
         enviadasHoje.set(n.user_id, jaHoje + 1);
         enviados++;
       } else {
+        const msg =
+          corpoResp?.errors?.[0]?.message ??
+          corpoResp?.message ??
+          `HTTP ${resp.status}`;
         await supabase
           .from('notificacoes')
-          .update({ push_enviado_em: null })
+          .update({ push_status: 'failed', push_erro: String(msg).slice(0, 500) })
           .eq('id', n.id);
         ignorados++;
       }
     } catch (e) {
       console.error('[enviar-push] falha ao enviar', n.id, e);
-      // Erro de rede: devolve a linha à fila.
+      // Erro de rede: falha terminal com a mensagem do erro.
+      const msg = e instanceof Error ? e.message : String(e);
       await supabase
         .from('notificacoes')
-        .update({ push_enviado_em: null })
+        .update({ push_status: 'failed', push_erro: msg.slice(0, 500) })
         .eq('id', n.id);
       ignorados++;
     }
