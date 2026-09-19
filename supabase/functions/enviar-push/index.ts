@@ -16,8 +16,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   conteudoPara,
+  dadosDeRota,
   dataLocal,
-  linkPara,
   podeEnviar,
   type Payload,
 } from './limites.ts';
@@ -149,14 +149,16 @@ Deno.serve(async () => {
     }
 
     const { titulo, corpo } = conteudoPara(n.tipo, n.payload ?? {});
-    const link = linkPara(n.tipo, n.payload ?? {});
+    // Contrato T6 (#44): envia `{ tipo, ...ids }` cru; a rota §4.5 é resolvida no
+    // app a partir da tabela canônica (sem link pré-computado aqui).
+    const data = dadosDeRota(n.tipo, n.payload ?? {});
     const mensagens = tokens.map((to) => ({
       to,
       title: titulo,
       body: corpo,
       sound: 'default',
       channelId: 'default',
-      data: link ? { link } : {},
+      data,
     }));
 
     const headers: Record<string, string> = {

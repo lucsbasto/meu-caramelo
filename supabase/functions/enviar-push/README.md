@@ -8,8 +8,10 @@ Edge Function que transforma linhas de `notificacoes` em push pela Expo Push API
 2. Para cada uma, aplica as regras da §7.5 (`limites.ts`):
    - teto de **5 push por usuário por dia** (fuso `PUSH_TZ`);
    - **silêncio 22h–7h**, exceto `pedido_ajuda` com `data_alvo` = hoje.
-3. Monta título/corpo (`conteudoPara`) e o deep link `data.link` (§4.5, `linkPara`)
-   e envia para todos os `device_tokens` do usuário.
+3. Monta título/corpo (`conteudoPara`) e o `data` cru `{ tipo, ...ids }`
+   (`dadosDeRota`) e envia para todos os `device_tokens` do usuário. A rota §4.5
+   **não** é computada aqui: por contrato T6 (#44) a tabela `tipo → rota` vive no
+   app (`src/features/notificacoes/tipos.ts`), que resolve o destino no toque.
 4. Marca o estado terminal e apaga tokens `DeviceNotRegistered`.
 
 ## Estado do push (`push_status`)
@@ -50,5 +52,7 @@ INSERT em `public.notificacoes` para a função.
 
 ## Testes
 
-A lógica pura (limites, silêncio, deep link, conteúdo) é coberta por
-`__tests__/limites.test.ts`, que roda no `pnpm test` normal do projeto.
+A lógica pura (limites, silêncio, `data` cru de rota, conteúdo) é coberta por
+`__tests__/limites.test.ts`; a tabela `tipo → rota` (§4.5) e seus casos de borda,
+por `src/features/notificacoes/__tests__/deepLink.test.ts`. Ambos rodam no
+`pnpm test` normal do projeto.

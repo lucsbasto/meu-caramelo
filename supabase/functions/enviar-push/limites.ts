@@ -1,6 +1,11 @@
-// Regras puras da §7.5 (limites e silêncio noturno) e do §4.5 (deep links),
-// isoladas de qualquer API do Deno/Supabase para poderem ser testadas com jest
-// e reutilizadas pelo runtime da Edge Function (index.ts).
+// Regras puras da §7.5 (limites e silêncio noturno), isoladas de qualquer API do
+// Deno/Supabase para poderem ser testadas com jest e reutilizadas pelo runtime
+// da Edge Function (index.ts).
+//
+// A rota do deep link NÃO é computada aqui: por contrato T6 (#44) a EF envia
+// `data = { tipo, ...ids }` cru e a tabela `tipo → rota` vive no app
+// (src/features/notificacoes/tipos.ts). O vocabulário de `tipo` abaixo espelha o
+// da const canônica do app.
 
 export type Payload = Record<string, unknown>;
 
@@ -28,36 +33,19 @@ export function dataLocal(data: Date, tz: string): string {
   }).format(data);
 }
 
-// §4.5 — cada push abre a tela final, nunca a home. Deriva a rota do Expo Router
-// a partir do tipo da notificação e dos ids no payload.
-export function linkPara(tipo: string, payload: Payload): string | null {
-  const pontoId = str(payload.ponto_id);
-  const registroId = str(payload.registro_id);
-  const pedidoId = str(payload.pedido_id);
-  const conviteToken = str(payload.convite_token);
+// Campos de id que a EF copia do `payload` para o `data` cru da mensagem (sem
+// JOIN). O app usa `tipo` + esses ids para montar a rota (§4.5, tabela no app).
+export const CAMPOS_ID_ROTA = ['ponto_id', 'pedido_id', 'registro_id'] as const;
 
-  switch (tipo) {
-    case 'ponto_vencido':
-    case 'ponto_novo':
-    case 'promovido_principal':
-      return pontoId ? `/ponto/${pontoId}` : null;
-    case 'pedido_ajuda':
-    case 'cobertura_confirmada':
-    case 'lembrete_cobertura':
-      return pedidoId
-        ? `/pedido/${pedidoId}`
-        : pontoId
-          ? `/ponto/${pontoId}`
-          : null;
-    case 'registro':
-    case 'comentario':
-      return registroId ? `/registro/${registroId}` : null;
-    case 'convite_comantenedor':
-      return conviteToken ? `/convite/${conviteToken}` : null;
-    default:
-      // Fallback conservador: se veio um ponto_id, abre o ponto.
-      return pontoId ? `/ponto/${pontoId}` : null;
+// Copia do payload apenas os ids de rota presentes, montando o `data` cru
+// `{ tipo, ...ids }` que viaja na mensagem push.
+export function dadosDeRota(tipo: string, payload: Payload): Record<string, string> {
+  const dados: Record<string, string> = { tipo };
+  for (const campo of CAMPOS_ID_ROTA) {
+    const v = str(payload[campo]);
+    if (v) dados[campo] = v;
   }
+  return dados;
 }
 
 // Título e corpo exibidos no push. O payload pode sobrescrever com `titulo`/`corpo`.
@@ -79,7 +67,7 @@ export function conteudoPara(
       titulo: 'Pedido de ajuda perto de você',
       corpo: 'Alguém precisa de cobertura em um ponto que você conhece.',
     },
-    registro: {
+    registro_em_ponto_seguido: {
       titulo: 'Novo registro em ponto seguido',
       corpo: 'Alguém acabou de alimentar um ponto que você segue.',
     },
@@ -87,7 +75,7 @@ export function conteudoPara(
       titulo: 'Comentaram no seu registro',
       corpo: 'Toque para ver o que disseram.',
     },
-    ponto_novo: {
+    ponto_novo_por_perto: {
       titulo: 'Ponto novo por perto',
       corpo: 'Cadastraram um ponto de alimentação perto de você.',
     },
