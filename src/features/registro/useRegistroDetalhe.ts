@@ -229,19 +229,3 @@ export function useRemoverRegistro(id: string) {
     },
   });
 }
-
-// Denúncia (§6.10 — menu de três pontos). Insert autenticado; select é bloqueado
-// pela RLS (só service role vê). Sem `motivo` estruturado neste WP.
-export function useDenunciar(id: string) {
-  return useMutation({
-    mutationFn: async (userId: string) => {
-      const row: TablesInsert<'denuncias'> = {
-        alvo_tipo: 'registro',
-        alvo_id: id,
-        autor_id: userId,
-      };
-      const { error } = await supabase.from('denuncias').insert(row);
-      if (error) throw error;
-    },
-  });
-}

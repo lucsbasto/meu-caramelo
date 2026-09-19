@@ -74,6 +74,7 @@ export type Database = {
           autor_id: string
           criado_em: string
           id: string
+          oculto: boolean
           registro_id: string
           texto: string
         }
@@ -81,6 +82,7 @@ export type Database = {
           autor_id: string
           criado_em?: string
           id?: string
+          oculto?: boolean
           registro_id: string
           texto: string
         }
@@ -88,6 +90,7 @@ export type Database = {
           autor_id?: string
           criado_em?: string
           id?: string
+          oculto?: boolean
           registro_id?: string
           texto?: string
         }
@@ -322,6 +325,7 @@ export type Database = {
           geom: unknown
           id: string
           nome: string
+          oculto: boolean
         }
         Insert: {
           ativo?: boolean
@@ -332,6 +336,7 @@ export type Database = {
           geom: unknown
           id?: string
           nome: string
+          oculto?: boolean
         }
         Update: {
           ativo?: boolean
@@ -342,6 +347,7 @@ export type Database = {
           geom?: unknown
           id?: string
           nome?: string
+          oculto?: boolean
         }
         Relationships: [
           {
@@ -452,6 +458,7 @@ export type Database = {
           gatos: number | null
           id: string
           observacao: string | null
+          oculto: boolean
           ponto_id: string
           quantidade_kg: number | null
           tipos: Database["public"]["Enums"]["tipo_item"][]
@@ -464,6 +471,7 @@ export type Database = {
           gatos?: number | null
           id?: string
           observacao?: string | null
+          oculto?: boolean
           ponto_id: string
           quantidade_kg?: number | null
           tipos: Database["public"]["Enums"]["tipo_item"][]
@@ -476,6 +484,7 @@ export type Database = {
           gatos?: number | null
           id?: string
           observacao?: string | null
+          oculto?: boolean
           ponto_id?: string
           quantidade_kg?: number | null
           tipos?: Database["public"]["Enums"]["tipo_item"][]

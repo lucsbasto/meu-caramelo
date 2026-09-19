@@ -38,11 +38,15 @@ import {
 import {
   RegistroNaoRemovidoError,
   useComentar,
-  useDenunciar,
   useReagir,
   useRegistroDetalhe,
   useRemoverRegistro,
 } from './useRegistroDetalhe';
+import {
+  perguntarMotivoDenuncia,
+  useBloquear,
+  useDenunciar,
+} from '@/features/moderacao/useModeracao';
 
 type Props = { id: string };
 
@@ -56,7 +60,8 @@ export function RegistroDetalheScreen({ id }: Props) {
   const reagir = useReagir(id, user?.id ?? null);
   const comentar = useComentar(id);
   const remover = useRemoverRegistro(id);
-  const denunciar = useDenunciar(id);
+  const denunciar = useDenunciar();
+  const bloquear = useBloquear();
 
   const reg = registro.data ?? null;
 
@@ -132,6 +137,11 @@ export function RegistroDetalheScreen({ id }: Props) {
     }[] = [
       { text: 'Denunciar', onPress: onDenunciar },
     ];
+    // Não faz sentido bloquear a si mesmo — só oferece no conteúdo dos outros.
+    const souAutor = user?.id != null && user.id === reg!.userId;
+    if (!souAutor) {
+      opcoes.push({ text: 'Bloquear autor', style: 'destructive', onPress: onBloquear });
+    }
     if (podeRemover) {
       opcoes.push({ text: 'Remover registro', style: 'destructive', onPress: onRemover });
     }
@@ -143,17 +153,39 @@ export function RegistroDetalheScreen({ id }: Props) {
     if (!requireAuth('Para denunciar, entre na sua conta.', `/registro/${id}`)) return;
     const userId = user?.id;
     if (!userId) return;
-    Alert.alert('Denunciar registro', 'Enviar este registro para revisão?', [
+    // Segundo passo: escolher um motivo (§7.7) confirma a denúncia; cancelar aborta.
+    perguntarMotivoDenuncia((motivo) =>
+      denunciar.mutate(
+        { alvoTipo: 'registro', alvoId: id, userId, motivo },
+        {
+          onSuccess: () =>
+            Alert.alert('Obrigado', 'Recebemos sua denúncia e vamos revisar.'),
+          onError: () =>
+            Alert.alert('Não deu para denunciar', 'Tente de novo em instantes.'),
+        }
+      )
+    );
+  }
+
+  function onBloquear() {
+    if (!requireAuth('Para bloquear, entre na sua conta.', `/registro/${id}`)) return;
+    const userId = user?.id;
+    if (!userId) return;
+    Alert.alert('Bloquear autor', 'Você não verá mais o conteúdo dele.', [
       { text: 'Cancelar', style: 'cancel' },
       {
-        text: 'Denunciar',
+        text: 'Bloquear',
+        style: 'destructive',
         onPress: () =>
-          denunciar.mutate(userId, {
-            onSuccess: () =>
-              Alert.alert('Obrigado', 'Recebemos sua denúncia e vamos revisar.'),
-            onError: () =>
-              Alert.alert('Não deu para denunciar', 'Tente de novo em instantes.'),
-          }),
+          bloquear.mutate(
+            { userId, bloqueadoId: reg!.userId },
+            {
+              // Bloqueado o autor, este registro dele sai da vista: volta ao feed.
+              onSuccess: () => router.back(),
+              onError: () =>
+                Alert.alert('Não deu para bloquear', 'Tente de novo em instantes.'),
+            }
+          ),
       },
     ]);
   }

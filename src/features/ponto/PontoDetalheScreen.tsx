@@ -24,6 +24,10 @@ import { useAuth } from '@/features/auth/session';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { abbreviateName } from '@/features/auth/abbreviate';
 import {
+  perguntarMotivoDenuncia,
+  useDenunciar,
+} from '@/features/moderacao/useModeracao';
+import {
   formatarConteudoRegistro,
   formatarDesde,
   formatarTempoRegistro,
@@ -54,6 +58,7 @@ export function PontoDetalheScreen({ id }: Props) {
   const seguir = useSeguir(id, user?.id ?? null);
   const removerRegistro = useRemoverRegistro(id);
   const adopt = useAdoptPoint(id);
+  const denunciar = useDenunciar();
   const minhaLocalizacao = useLocalizacaoDiscreta();
 
   if (ponto.isLoading) {
@@ -182,6 +187,32 @@ export function PontoDetalheScreen({ id }: Props) {
     Alert.alert('Em breve', 'Essa área ainda não existe no app.');
   }
 
+  // Denunciar o ponto (§7.7): motivo opcional via action sheet. O gatilho 0010
+  // auto-oculta o ponto ao 3º denunciante distinto (some do mapa e do detalhe).
+  function onDenunciarPonto() {
+    if (!requireAuth('Para denunciar, entre na sua conta.', `/ponto/${id}`)) return;
+    const userId = user?.id;
+    if (!userId) return;
+    perguntarMotivoDenuncia((motivo) =>
+      denunciar.mutate(
+        { alvoTipo: 'ponto', alvoId: id, userId, motivo },
+        {
+          onSuccess: () =>
+            Alert.alert('Obrigado', 'Recebemos sua denúncia e vamos revisar.'),
+          onError: () =>
+            Alert.alert('Não deu para denunciar', 'Tente de novo em instantes.'),
+        }
+      )
+    );
+  }
+
+  function onMenu() {
+    Alert.alert('Ponto', undefined, [
+      { text: 'Denunciar ponto', onPress: onDenunciarPonto },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView bounces={false} contentContainerStyle={styles.scrollContent}>
@@ -191,6 +222,7 @@ export function PontoDetalheScreen({ id }: Props) {
           onVoltar={onVoltar}
           onSeguir={onSeguir}
           onCompartilhar={onCompartilhar}
+          onMenu={onMenu}
         />
 
         <View style={styles.painel}>
@@ -307,12 +339,14 @@ function Cabecalho({
   onVoltar,
   onSeguir,
   onCompartilhar,
+  onMenu,
 }: {
   ponto: PontoDetalhe;
   seguindo: boolean;
   onVoltar: () => void;
   onSeguir: () => void;
   onCompartilhar: () => void;
+  onMenu: () => void;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -339,6 +373,9 @@ function Cabecalho({
           </BotaoCirculo>
           <BotaoCirculo aria="Compartilhar" onPress={onCompartilhar}>
             <Text style={styles.iconeBotao}>⤴</Text>
+          </BotaoCirculo>
+          <BotaoCirculo aria="Mais opções" onPress={onMenu}>
+            <Text style={styles.iconeBotao}>⋯</Text>
           </BotaoCirculo>
         </View>
       </View>
