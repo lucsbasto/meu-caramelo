@@ -56,6 +56,8 @@ export default function RootLayout() {
               <Stack.Screen name="pedido/[id]" />
               {/* Busca empilhada sobre o mapa (§6.14). */}
               <Stack.Screen name="busca" />
+              {/* Configurações empilhada sobre o Perfil (§6.13). */}
+              <Stack.Screen name="configuracoes" />
               {/* Aceite de convite de co-mantenedor por deep-link (§7.4). */}
               <Stack.Screen name="convite/[token]" />
               {/* Login empilhado como card/modal (§6.2). */}
