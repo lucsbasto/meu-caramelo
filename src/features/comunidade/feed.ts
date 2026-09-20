@@ -1,6 +1,6 @@
 // Tipos + normalização + formatadores puros do feed da comunidade (§6.8).
 import type { Database } from '@/lib/database.types';
-import { abbreviateName } from '@/features/auth/abbreviate';
+import { nomeAutor } from '@/features/auth/abbreviate';
 import { formatarConteudoRegistro } from '@/features/ponto/dados';
 
 // Raio padrão do escopo "Perto de mim". O seletor de raio (§6.13, aba
@@ -64,7 +64,10 @@ export function normalizarItemFeed(row: FeedRow): ItemFeed {
     pontoId: row.ponto_id,
     pontoNome: row.ponto_nome,
     autorId: row.autor_id,
-    autorNome: abbreviateName(row.autor_nome),
+    // Autor apagado aparece como "Voluntário removido" (§6.13). No feed isso só
+    // vale de fato quando o feed_proximo passar a LEFT JOIN profiles — hoje é
+    // INNER JOIN e a linha sem autor some; a troca acompanha o WP do feed (#20).
+    autorNome: nomeAutor(row.autor_nome),
     autorAvatarUrl: row.autor_avatar_url,
     texto: row.conteudo,
     fotoUrl: row.foto_url,

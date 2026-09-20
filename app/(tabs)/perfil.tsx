@@ -62,6 +62,7 @@ export default function PerfilScreen() {
 }
 
 function SignedInProfile({ userId }: { userId: string }) {
+  const router = useRouter();
   const {
     data: profile,
     isLoading,
@@ -128,6 +129,17 @@ function SignedInProfile({ userId }: { userId: string }) {
 
         {/* Meus pontos: pontos mantidos, cada um leva à edição (§6.6). */}
         <MeusPontos userId={userId} />
+
+        {/* Configurações: conta, preferências de notificação, bloqueados, sair e
+            apagar conta ficam na tela empilhada (§6.13). */}
+        <Pressable
+          onPress={() => router.push('/configuracoes')}
+          style={({ pressed }) => [styles.configRow, pressed && styles.pontoLinhaPressed]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.configLabel}>Configurações</Text>
+          <Text style={styles.pontoSeta}>›</Text>
+        </Pressable>
 
         {/* Sair da conta: remove o token de push deste aparelho antes de encerrar
             a sessão (WP14, §7.5). */}
@@ -572,6 +584,24 @@ const styles = StyleSheet.create({
   pontoInativo: { fontFamily: fonts.body, fontSize: 12, color: colors.alerta },
   pontoSeta: { fontFamily: fonts.body, fontSize: 22, color: colors.textWeak },
 
+  configRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: touch.min,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.card,
+  },
+  configLabel: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
   sairBtn: {
     minHeight: touch.min,
     alignItems: 'center',

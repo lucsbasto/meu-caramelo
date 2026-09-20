@@ -1,6 +1,6 @@
 // Tipos + normalização + formatadores puros do detalhe do registro (§6.10).
 import type { Tables } from '@/lib/database.types';
-import { abbreviateName } from '@/features/auth/abbreviate';
+import { nomeAutor } from '@/features/auth/abbreviate';
 
 // Linha crua do registro com o autor (profiles) e o ponto (pontos) embutidos.
 export type RegistroDetalheRow = Tables<'registros'> & {
@@ -30,7 +30,7 @@ export function normalizarRegistroDetalhe(row: RegistroDetalheRow): RegistroDeta
     pontoId: row.ponto_id,
     pontoNome: row.pontos?.nome ?? 'Ponto',
     userId: row.user_id,
-    autorNome: abbreviateName(row.profiles?.nome ?? 'Vizinho'),
+    autorNome: nomeAutor(row.profiles?.nome),
     autorAvatarUrl: row.profiles?.avatar_url ?? null,
     criadoEm: row.criado_em,
     caes: row.caes,
@@ -60,7 +60,7 @@ export function normalizarComentario(row: ComentarioRow): Comentario {
   return {
     id: row.id,
     autorId: row.autor_id,
-    autorNome: abbreviateName(row.profiles?.nome ?? 'Vizinho'),
+    autorNome: nomeAutor(row.profiles?.nome),
     autorAvatarUrl: row.profiles?.avatar_url ?? null,
     texto: row.texto,
     criadoEm: row.criado_em,

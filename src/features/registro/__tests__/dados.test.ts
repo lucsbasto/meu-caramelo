@@ -68,9 +68,11 @@ describe('normalizarRegistroDetalhe', () => {
     expect(r.fotoUrl).toBe('http://foto');
   });
 
-  it('cai em textos padrão quando faltam autor/ponto', () => {
+  it('autor apagado vira "Voluntário removido" e ponto ausente vira "Ponto"', () => {
+    // Conta apagada: a autoria fica nula (set null), o histórico do ponto fica
+    // e a UI atribui o registro a "Voluntário removido" (§6.13/§7.6).
     const r = normalizarRegistroDetalhe({ ...base, profiles: null, pontos: null });
-    expect(r.autorNome).toBe('Vizinho');
+    expect(r.autorNome).toBe('Voluntário removido');
     expect(r.pontoNome).toBe('Ponto');
   });
 });
