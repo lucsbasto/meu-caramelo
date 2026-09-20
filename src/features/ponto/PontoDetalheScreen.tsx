@@ -110,6 +110,15 @@ export function PontoDetalheScreen({ id }: Props) {
     router.push(`/ponto/${id}/registrar`);
   }
 
+  // Pedir ajuda (§6.9): qualquer voluntário pode, não só o mantenedor. Abre a
+  // folha /ponto/:id/ajuda atrás da parede de login.
+  function onPedirAjuda() {
+    if (!requireAuth('Para pedir ajuda, entre na sua conta.', `/ponto/${id}`)) {
+      return;
+    }
+    router.push(`/ponto/${id}/ajuda`);
+  }
+
   function onAdopt() {
     // Guard against a fast double tap: the confirm Alert opens before `mutate`,
     // while `isPending` is still false, so on Android stacked Alerts could fire
@@ -197,6 +206,7 @@ export function PontoDetalheScreen({ id }: Props) {
           onVoltar={onVoltar}
           onSeguir={onSeguir}
           onCompartilhar={onCompartilhar}
+          onPedirAjuda={onPedirAjuda}
         />
 
         <View style={styles.painel}>
@@ -314,6 +324,7 @@ function Cabecalho({
   onVoltar,
   onSeguir,
   onCompartilhar,
+  onPedirAjuda,
 }: {
   ponto: PontoDetalhe;
   fotos: PontoFoto[];
@@ -321,6 +332,7 @@ function Cabecalho({
   onVoltar: () => void;
   onSeguir: () => void;
   onCompartilhar: () => void;
+  onPedirAjuda: () => void;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -349,6 +361,9 @@ function Cabecalho({
         </BotaoCirculo>
 
         <View style={styles.cabecalhoBotoesDireita}>
+          <BotaoCirculo aria="Pedir ajuda" onPress={onPedirAjuda}>
+            <Text style={styles.iconeBotao}>🙋</Text>
+          </BotaoCirculo>
           <BotaoCirculo aria={seguindo ? 'Deixar de seguir' : 'Seguir'} onPress={onSeguir}>
             <Text style={[styles.iconeBotao, seguindo && styles.iconeSeguindo]}>
               {seguindo ? '♥' : '♡'}
