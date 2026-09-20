@@ -38,15 +38,19 @@ import {
   buscarPontoProximo,
   geocodeReverso,
   gravarFotoUrl,
-  subirFotoPonto,
+  inserirFotoPonto,
+  removerFotoPonto,
+  subirFotoGaleria,
   useAtualizarPonto,
   useCriarPonto,
   useDesativarPonto,
+  useFotosEditavel,
   useGarantirMantenedor,
   useMeusPontos,
   usePontoEditavel,
   useReativarPonto,
   useSairMantenedor,
+  type FotoEditavel,
   type PontoProximo,
 } from './useEditorPonto';
 
@@ -107,7 +111,6 @@ export function EditorPontoScreen({ modo, id, coordInicial }: Props) {
         usuarioId={user.id}
         nomeInicial={p.nome}
         enderecoInicial={p.endereco}
-        fotoInicial={p.fotoUrl}
         coordSeed={{ lat: p.lat, lng: p.lng }}
         ativoInicial={p.ativo}
       />
@@ -120,7 +123,6 @@ export function EditorPontoScreen({ modo, id, coordInicial }: Props) {
       usuarioId={user.id}
       nomeInicial=""
       enderecoInicial={null}
-      fotoInicial={null}
       coordSeed={coordInicial ?? CENTRO_PADRAO}
       resolverLocalizacao={coordInicial == null}
       ativoInicial
@@ -134,7 +136,6 @@ type FormProps = {
   usuarioId: string;
   nomeInicial: string;
   enderecoInicial: string | null;
-  fotoInicial: string | null;
   coordSeed: Coord;
   ativoInicial: boolean;
   resolverLocalizacao?: boolean;
@@ -146,7 +147,6 @@ function EditorForm({
   usuarioId,
   nomeInicial,
   enderecoInicial,
-  fotoInicial,
   coordSeed,
   ativoInicial,
   resolverLocalizacao,
@@ -166,15 +166,22 @@ function EditorForm({
   const [coord, setCoord] = useState<Coord>(coordSeed);
   const [mapaSeed, setMapaSeed] = useState<Coord>(coordSeed);
   const [seedNonce, setSeedNonce] = useState(0);
-  const [fotoLocal, setFotoLocal] = useState<string | null>(null);
   const [duplicata, setDuplicata] = useState<PontoProximo | null>(null);
   const [duplicataDispensada, setDuplicataDispensada] = useState(false);
   const [modalMapa, setModalMapa] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [ativo, setAtivo] = useState(ativoInicial);
 
-  // Foto exibida no quadro: a nova escolhida tem prioridade sobre a já salva.
-  const fotoExibida = fotoLocal ?? fotoInicial;
+  // Galeria: fotos já salvas (a remover) + novas escolhidas neste formulário
+  // ainda por subir. A capa (§6.4) é a primeira da lista final. As salvas vêm
+  // direto da query (fonte da verdade); a remoção é derivada, não copiada para
+  // o estado, para não disparar setState dentro de effect.
+  const fotosSalvasQuery = useFotosEditavel(modo === 'editar' ? id : undefined);
+  const [removidasIds, setRemovidasIds] = useState<string[]>([]);
+  const [fotosNovas, setFotosNovas] = useState<string[]>([]);
+
+  const fotosSalvas: FotoEditavel[] = fotosSalvasQuery.data ?? [];
+  const fotosSalvasVisiveis = fotosSalvas.filter((f) => !removidasIds.includes(f.id));
 
   // Endereço editado à mão não é sobrescrito pela geocodificação até o pin
   // se mexer de novo (§6.6: arrastar o pin refaz a geocodificação).
@@ -284,6 +291,10 @@ function EditorForm({
     setEndereco(texto);
   }
 
+  function adicionarNovas(uris: string[]) {
+    if (uris.length > 0) setFotosNovas((atuais) => [...atuais, ...uris]);
+  }
+
   async function escolherDaCamera() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
@@ -291,7 +302,7 @@ function EditorForm({
       return;
     }
     const r = await ImagePicker.launchCameraAsync({ quality: 1 });
-    if (!r.canceled && r.assets[0]) setFotoLocal(r.assets[0].uri);
+    if (!r.canceled && r.assets[0]) adicionarNovas([r.assets[0].uri]);
   }
 
   async function escolherDaGaleria() {
@@ -303,36 +314,74 @@ function EditorForm({
     const r = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 1,
+      allowsMultipleSelection: true,
     });
-    if (!r.canceled && r.assets[0]) setFotoLocal(r.assets[0].uri);
+    if (!r.canceled) adicionarNovas(r.assets.map((a) => a.uri));
   }
 
   function escolherFoto() {
-    Alert.alert('Foto do ponto', 'De onde vem a foto?', [
+    Alert.alert('Adicionar foto', 'De onde vem a foto?', [
       { text: 'Câmera', onPress: () => void escolherDaCamera() },
       { text: 'Galeria', onPress: () => void escolherDaGaleria() },
-      ...(fotoExibida
-        ? [{ text: 'Remover', style: 'destructive' as const, onPress: () => setFotoLocal(null) }]
-        : []),
       { text: 'Cancelar', style: 'cancel' as const },
     ]);
   }
 
-  // Sobe a foto depois que o ponto já existe. Se falhar, o cadastro continua
-  // salvo: a pessoa escolhe tentar de novo ou seguir sem foto (§6.6 Estados).
-  function enviarFotoComGraca(pontoId: string, uri: string): Promise<void> {
+  function removerSalva(fotoId: string) {
+    setRemovidasIds((atuais) => (atuais.includes(fotoId) ? atuais : [...atuais, fotoId]));
+  }
+
+  function removerNova(uri: string) {
+    setFotosNovas((atuais) => {
+      const i = atuais.indexOf(uri);
+      if (i < 0) return atuais;
+      return [...atuais.slice(0, i), ...atuais.slice(i + 1)];
+    });
+  }
+
+  // Persiste a galeria depois que o ponto já existe: apaga as removidas, sobe as
+  // novas e regrava a capa (§6.4). O upload é passo à parte para nunca perder o
+  // cadastro por causa da imagem — falha oferece tentar de novo ou seguir sem
+  // (§6.6 Estados).
+  function salvarGaleriaComGraca(pontoId: string): Promise<void> {
+    // Filas de trabalho consumidas item a item: um "Tentar de novo" retoma de
+    // onde parou, sem re-remover, re-subir nem re-inserir o que já concluiu
+    // (senão a galeria ganharia fotos duplicadas e arquivos órfãos).
+    const removerFila = removidasIds
+      .map((fid) => ({ id: fid, url: fotosSalvas.find((f) => f.id === fid)?.url ?? '' }))
+      .filter((r) => r.url);
+    const subirFila = [...fotosNovas];
+    const urlsNovas: string[] = [];
+    // Próxima ordem = maior ordem salva restante + 1 (não o tamanho da lista,
+    // que colide quando se remove uma foto do meio).
+    const maiorOrdem = fotosSalvasVisiveis.reduce((m, f) => Math.max(m, f.ordem), -1);
+    let proximaOrdem = maiorOrdem + 1;
+
     return new Promise((resolve) => {
       const tentar = async () => {
         try {
-          const url = await subirFotoPonto(pontoId, uri);
-          await gravarFotoUrl(pontoId, url);
+          while (removerFila.length > 0) {
+            const { id, url } = removerFila[0];
+            await removerFotoPonto(id, url);
+            removerFila.shift();
+          }
+          while (subirFila.length > 0) {
+            const url = await subirFotoGaleria(pontoId, subirFila[0]);
+            await inserirFotoPonto({ pontoId, url, ordem: proximaOrdem, userId: usuarioId });
+            urlsNovas.push(url);
+            proximaOrdem += 1;
+            subirFila.shift();
+          }
+          // Capa = primeira foto da lista final (salvas restantes, depois novas).
+          const capa = fotosSalvasVisiveis[0]?.url ?? urlsNovas[0] ?? null;
+          await gravarFotoUrl(pontoId, capa);
           resolve();
         } catch {
           Alert.alert(
-            'Foto não enviada',
-            'O ponto foi salvo, mas a foto não subiu. Você pode tentar de novo.',
+            'Fotos não enviadas',
+            'O ponto foi salvo, mas as fotos não subiram. Você pode tentar de novo.',
             [
-              { text: 'Seguir sem foto', style: 'cancel', onPress: () => resolve() },
+              { text: 'Seguir sem fotos', style: 'cancel', onPress: () => resolve() },
               { text: 'Tentar de novo', onPress: () => void tentar() },
             ]
           );
@@ -341,6 +390,8 @@ function EditorForm({
       void tentar();
     });
   }
+
+  const temMudancaGaleria = fotosNovas.length > 0 || removidasIds.length > 0;
 
   async function onSalvar() {
     // Trava síncrona: dois toques rápidos não passam os dois (o estado
@@ -366,14 +417,23 @@ function EditorForm({
         }
         // Passo idempotente: registra o criador como mantenedor principal.
         await garantirMantenedor.mutateAsync({ pontoId: novoId, userId: usuarioId });
-        if (fotoLocal) await enviarFotoComGraca(novoId, fotoLocal);
+        if (fotosNovas.length > 0) await salvarGaleriaComGraca(novoId);
         queryClient.invalidateQueries({ queryKey: ['pontos'] });
         queryClient.invalidateQueries({ queryKey: ['meus-pontos'] });
+        queryClient.invalidateQueries({ queryKey: ['ponto', novoId, 'fotos'] });
         // Cria, fecha e abre o detalhe do ponto novo (§6.6 Interações).
         router.replace(`/ponto/${novoId}`);
       } else if (id) {
         await atualizar.mutateAsync({ id, nome, coord, endereco: endereco || null });
-        if (fotoLocal) await enviarFotoComGraca(id, fotoLocal);
+        if (temMudancaGaleria) {
+          await salvarGaleriaComGraca(id);
+          queryClient.invalidateQueries({ queryKey: ['ponto', id, 'fotos'] });
+          // A galeria altera a capa (foto_url) DEPOIS do onSuccess do atualizar,
+          // então reinvalida o que depende dela: detalhe, pins do mapa e feed.
+          queryClient.invalidateQueries({ queryKey: ['ponto', id] });
+          queryClient.invalidateQueries({ queryKey: ['pontos'] });
+          queryClient.invalidateQueries({ queryKey: ['meus-pontos'] });
+        }
         router.back();
       }
     } catch (err) {
@@ -553,21 +613,34 @@ function EditorForm({
           <Text style={styles.dica}>{DICA_NOME}</Text>
         </View>
 
-        {/* Foto opcional: quadro tracejado de 98 px (§6.6 Anatomia 5). */}
+        {/* Fotos opcionais: galeria em carrossel no detalhe (§6.4/§6.6). A
+            primeira da lista é a capa usada no mapa e no feed. */}
         <View style={styles.campo}>
-          <Text style={styles.rotulo}>Foto (opcional)</Text>
-          <Pressable
-            onPress={escolherFoto}
-            style={({ pressed }) => [styles.foto, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Escolher foto do ponto"
+          <Text style={styles.rotulo}>Fotos (opcional)</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.fotoStrip}
           >
-            {fotoExibida ? (
-              <Image source={{ uri: fotoExibida }} style={styles.fotoImagem} />
-            ) : (
+            {fotosSalvasVisiveis.map((f) => (
+              <MiniaturaFoto key={f.id} uri={f.url} onRemover={() => removerSalva(f.id)} />
+            ))}
+            {fotosNovas.map((uri, i) => (
+              <MiniaturaFoto
+                key={`nova-${i}-${uri}`}
+                uri={uri}
+                onRemover={() => removerNova(uri)}
+              />
+            ))}
+            <Pressable
+              onPress={escolherFoto}
+              style={({ pressed }) => [styles.foto, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar foto do ponto"
+            >
               <Text style={styles.fotoMais}>＋</Text>
-            )}
-          </Pressable>
+            </Pressable>
+          </ScrollView>
         </View>
 
         {/* Aviso de privacidade fixo, não é caixa de aceite (§6.6 Anatomia 6). */}
@@ -693,6 +766,24 @@ function TelaCentral({ children }: { children: React.ReactNode }) {
   return <View style={styles.central}>{children}</View>;
 }
 
+// Miniatura da galeria no editor: a foto com um botão de remover no canto.
+function MiniaturaFoto({ uri, onRemover }: { uri: string; onRemover: () => void }) {
+  return (
+    <View style={styles.miniatura}>
+      <Image source={{ uri }} style={styles.fotoImagem} />
+      <Pressable
+        onPress={onRemover}
+        style={styles.miniaturaRemover}
+        accessibilityRole="button"
+        accessibilityLabel="Remover esta foto"
+        hitSlop={8}
+      >
+        <Text style={styles.miniaturaRemoverTexto}>×</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   central: {
@@ -782,6 +873,31 @@ const styles = StyleSheet.create({
   },
   fotoImagem: { width: '100%', height: '100%' },
   fotoMais: { fontSize: 34, color: colors.textWeak },
+  fotoStrip: { gap: spacing.sm, paddingVertical: 2 },
+  miniatura: {
+    width: 98,
+    height: 98,
+    borderRadius: radii.card,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
+  miniaturaRemover: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(43,29,18,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniaturaRemoverTexto: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    lineHeight: 18,
+    color: colors.onDark,
+  },
 
   avisoPrivacidade: {
     backgroundColor: colors.verdeLightBg,

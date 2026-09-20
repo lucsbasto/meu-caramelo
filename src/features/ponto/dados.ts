@@ -37,6 +37,14 @@ export function normalizarPontoDetalhe(row: PontoDetalheRow): PontoDetalhe | nul
   };
 }
 
+// Foto da galeria do ponto (§6.4). A capa (`pontos.foto_url`) é uma dessas —
+// a de menor `ordem`; o carrossel do detalhe exibe todas nesta sequência.
+export type PontoFoto = {
+  id: string;
+  url: string;
+  ordem: number;
+};
+
 export type Papel = Tables<'ponto_mantenedores'>['papel'];
 
 export type Mantenedor = {

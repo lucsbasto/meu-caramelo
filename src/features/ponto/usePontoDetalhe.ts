@@ -10,6 +10,7 @@ import {
   type EstatisticasMes,
   type Mantenedor,
   type PontoDetalhe,
+  type PontoFoto,
   type RegistroPonto,
 } from './dados';
 
@@ -17,6 +18,9 @@ const QTD_REGISTROS_TELA = 3;
 
 export function chavePonto(id: string) {
   return ['ponto', id] as const;
+}
+export function chaveFotos(id: string) {
+  return ['ponto', id, 'fotos'] as const;
 }
 export function chaveMantenedores(id: string) {
   return ['ponto', id, 'mantenedores'] as const;
@@ -36,6 +40,43 @@ async function buscarPonto(id: string): Promise<PontoDetalhe | null> {
     .maybeSingle();
   if (error) throw error;
   return data ? normalizarPontoDetalhe(data) : null;
+}
+
+// Galeria do ponto (§6.4). A tabela `ponto_fotos` ainda não está nos tipos
+// gerados do Supabase — fronteira tipada estreita, mesmo padrão de
+// `useSairMantenedor`, para não editar `database.types.ts` na mão.
+type FotoRow = { id: string; url: string; ordem: number | null };
+const dbFotos = supabase as unknown as {
+  from: (t: 'ponto_fotos') => {
+    select: (cols: string) => {
+      eq: (col: string, val: string) => {
+        order: (
+          col: string,
+          o: { ascending: boolean }
+        ) => {
+          order: (
+            col: string,
+            o: { ascending: boolean }
+          ) => Promise<{ data: FotoRow[] | null; error: unknown }>;
+        };
+      };
+    };
+  };
+};
+
+export async function buscarFotosPonto(id: string): Promise<PontoFoto[]> {
+  const { data, error } = await dbFotos
+    .from('ponto_fotos')
+    .select('id, url, ordem')
+    .eq('ponto_id', id)
+    .order('ordem', { ascending: true })
+    .order('criado_em', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((f) => ({
+    id: f.id,
+    url: f.url,
+    ordem: f.ordem ?? 0,
+  }));
 }
 
 export async function buscarMantenedores(id: string): Promise<Mantenedor[]> {
@@ -105,6 +146,11 @@ export function usePontoDetalhe(id: string | undefined) {
     queryFn: () => buscarPonto(id as string),
     enabled: id != null,
   });
+  const fotos = useQuery({
+    queryKey: id ? chaveFotos(id) : ['ponto', 'sem-id', 'fotos'],
+    queryFn: () => buscarFotosPonto(id as string),
+    enabled: id != null,
+  });
   const mantenedores = useQuery({
     queryKey: id ? chaveMantenedores(id) : ['ponto', 'sem-id', 'mantenedores'],
     queryFn: () => buscarMantenedores(id as string),
@@ -160,7 +206,7 @@ export function usePontoDetalhe(id: string | undefined) {
     };
   }, [id, queryClient]);
 
-  return { ponto, mantenedores, registros, estatisticas };
+  return { ponto, fotos, mantenedores, registros, estatisticas };
 }
 
 // Sinaliza que o delete não afetou nenhuma linha: o registro já tinha sido

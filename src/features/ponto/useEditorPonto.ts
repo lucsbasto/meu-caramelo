@@ -105,10 +105,10 @@ export async function buscarPontoProximo(
 // Foto: redimensiona (~1600 px / 80%) e sobe para o Storage (§6.6 Dados).
 // Lança em caso de falha para o chamador decidir "salvar sem foto".
 // ---------------------------------------------------------------------------
-export async function subirFotoPonto(
-  pontoId: string,
-  localUri: string
-): Promise<string> {
+// Redimensiona (~1600 px / 80%) e devolve o binário JPEG pronto para o Storage.
+// fetch(file://).arrayBuffer() é o caminho recomendado do Supabase no RN:
+// não depende de lib de base64 e funciona com o Storage direto.
+async function comprimirParaJpeg(localUri: string): Promise<ArrayBuffer> {
   const contexto = ImageManipulator.manipulate(localUri);
   contexto.resize({ width: 1600 });
   const renderizada = await contexto.renderAsync();
@@ -116,11 +116,15 @@ export async function subirFotoPonto(
     compress: 0.8,
     format: SaveFormat.JPEG,
   });
+  return fetch(comprimida.uri).then((r) => r.arrayBuffer());
+}
 
-  // fetch(file://).arrayBuffer() é o caminho recomendado do Supabase no RN:
-  // não depende de lib de base64 e funciona com o Storage direto.
-  const arquivo = await fetch(comprimida.uri).then((r) => r.arrayBuffer());
-  // Nome estável por ponto: trocar a foto sobrescreve o arquivo antigo em vez
+export async function subirFotoPonto(
+  pontoId: string,
+  localUri: string
+): Promise<string> {
+  const arquivo = await comprimirParaJpeg(localUri);
+  // Nome estável por ponto: trocar a capa sobrescreve o arquivo antigo em vez
   // de deixar órfãos acumulados no bucket.
   const caminho = `${pontoId}/foto.jpg`;
 
@@ -132,6 +136,117 @@ export async function subirFotoPonto(
   const { data } = supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho);
   // Quebra o cache do CDN/Image quando a foto é substituída no mesmo caminho.
   return `${data.publicUrl}?t=${Date.now()}`;
+}
+
+// ---------------------------------------------------------------------------
+// Galeria (§6.4): várias fotos por ponto na tabela `ponto_fotos`. Cada imagem
+// vira um arquivo com nome único no bucket (não sobrescreve as outras) e uma
+// linha na tabela. A tabela ainda não está nos tipos gerados — fronteira
+// tipada estreita, mesmo padrão de `useSairMantenedor`.
+// ---------------------------------------------------------------------------
+const dbFotos = supabase as unknown as {
+  from: (t: 'ponto_fotos') => {
+    insert: (row: Record<string, unknown>) => Promise<{ error: unknown }>;
+    delete: () => {
+      eq: (col: string, val: string) => Promise<{ error: unknown }>;
+    };
+    select: (cols: string) => {
+      eq: (col: string, val: string) => {
+        order: (
+          col: string,
+          o: { ascending: boolean }
+        ) => {
+          order: (
+            col: string,
+            o: { ascending: boolean }
+          ) => Promise<{ data: FotoEditavelRow[] | null; error: unknown }>;
+        };
+      };
+    };
+  };
+};
+
+type FotoEditavelRow = { id: string; url: string; ordem: number | null };
+
+// Sobe uma foto da galeria com nome único (não colide com as outras do ponto).
+export async function subirFotoGaleria(
+  pontoId: string,
+  localUri: string
+): Promise<string> {
+  const arquivo = await comprimirParaJpeg(localUri);
+  const nome = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+  const caminho = `${pontoId}/galeria/${nome}`;
+
+  const { error } = await supabase.storage
+    .from(BUCKET_FOTOS)
+    .upload(caminho, arquivo, { contentType: 'image/jpeg', upsert: true });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho);
+  return data.publicUrl;
+}
+
+export async function inserirFotoPonto(args: {
+  pontoId: string;
+  url: string;
+  ordem: number;
+  userId: string;
+}): Promise<void> {
+  const { error } = await dbFotos.from('ponto_fotos').insert({
+    ponto_id: args.pontoId,
+    url: args.url,
+    ordem: args.ordem,
+    criado_por: args.userId,
+  });
+  if (error) throw error;
+}
+
+// Extrai o caminho dentro do bucket a partir da URL pública, para apagar o
+// arquivo junto com a linha. A URL pública é `.../<bucket>/<caminho>[?t=...]`.
+function caminhoNoBucket(url: string): string | null {
+  const marcador = `/${BUCKET_FOTOS}/`;
+  const i = url.indexOf(marcador);
+  if (i < 0) return null;
+  const bruto = url.slice(i + marcador.length).split('?')[0];
+  return bruto || null;
+}
+
+export async function removerFotoPonto(fotoId: string, url: string): Promise<void> {
+  const { error } = await dbFotos.from('ponto_fotos').delete().eq('id', fotoId);
+  if (error) throw error;
+  // Limpeza do Storage é best-effort: a linha já saiu; um arquivo que não
+  // apagou (rede/permissão) não deve reverter a remoção lógica nem travar o
+  // save. Sobra, no pior caso, um órfão — nunca uma foto fantasma na galeria.
+  const caminho = caminhoNoBucket(url);
+  if (caminho) {
+    try {
+      await supabase.storage.from(BUCKET_FOTOS).remove([caminho]);
+    } catch {
+      // ignora: órfão tolerável, remoção lógica preservada.
+    }
+  }
+}
+
+async function buscarFotosEditavel(pontoId: string): Promise<FotoEditavel[]> {
+  const { data, error } = await dbFotos
+    .from('ponto_fotos')
+    .select('id, url, ordem')
+    .eq('ponto_id', pontoId)
+    .order('ordem', { ascending: true })
+    .order('criado_em', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((f) => ({ id: f.id, url: f.url, ordem: f.ordem ?? 0 }));
+}
+
+export type FotoEditavel = { id: string; url: string; ordem: number };
+
+export function useFotosEditavel(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? ['ponto-fotos-editavel', id] : ['ponto-fotos-editavel', 'sem-id'],
+    queryFn: () => buscarFotosEditavel(id as string),
+    enabled: id != null,
+    staleTime: 0,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -289,7 +404,7 @@ export function useAtualizarPonto() {
 
 // Grava só a foto_url depois que o ponto já existe (upload é passo à parte
 // para nunca perder o cadastro por causa da imagem — §6.6 Estados).
-export async function gravarFotoUrl(id: string, fotoUrl: string): Promise<void> {
+export async function gravarFotoUrl(id: string, fotoUrl: string | null): Promise<void> {
   const { error } = await supabase
     .from('pontos')
     .update({ foto_url: fotoUrl })
