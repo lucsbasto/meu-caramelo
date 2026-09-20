@@ -45,6 +45,8 @@ export default function RootLayout() {
             <Stack.Screen name="ponto/novo" />
             <Stack.Screen name="ponto/[id]/editar" />
             <Stack.Screen name="ponto/[id]/registrar" />
+            {/* Pedido de ajuda como folha inferior sobre o detalhe (§6.9). */}
+            <Stack.Screen name="ponto/[id]/ajuda" options={{ presentation: 'formSheet' }} />
             <Stack.Screen name="ponto/[id]/mantenedores" />
             {/* Detalhe do registro empilhado sobre o feed (§6.10). */}
             <Stack.Screen name="registro/[id]" />

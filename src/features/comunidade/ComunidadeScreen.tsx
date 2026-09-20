@@ -20,9 +20,12 @@ import * as Location from 'expo-location';
 
 import { colors, fonts, radii, spacing, touch } from '@/theme';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
+import { useAuth } from '@/features/auth/session';
 import { CENTRO_PADRAO } from '@/features/mapa/MapaScreen';
 import type { Centro } from '@/features/mapa/usePontos';
 import { useFeed } from './useFeed';
+import { useCobrirPedido } from './usePedidoAjuda';
+import { mensagemErroCobrir } from './pedidoAjuda';
 import {
   formatarTempoFeed,
   fraseEvento,
@@ -39,10 +42,12 @@ const CHIPS: { escopo: EscopoFeed; rotulo: string }[] = [
 export default function ComunidadeScreen() {
   const router = useRouter();
   const requireAuth = useRequireAuth();
+  const { user } = useAuth();
   const centro = useCentroAtual();
   const [escopo, setEscopo] = useState<EscopoFeed>('perto');
 
   const feed = useFeed(escopo, centro);
+  const cobrir = useCobrirPedido();
   const {
     itens,
     isLoading,
@@ -105,12 +110,33 @@ export default function ComunidadeScreen() {
     abrirRegistro(item);
   }
 
-  // "Quero cobrir": o fluxo de cobrir é o #27; aqui garante login e sinaliza.
+  // "Quero cobrir" (§6.8): o botão mais valioso do feed. Confirma, chama a RPC
+  // cobrir_pedido (transição aberto -> coberto + notifica o autor) e o realtime/
+  // invalidação tira o pedido da lista. Erros (já coberto, etc.) viram aviso.
   function onCobrir(item: ItemFeed) {
     if (!requireAuth('Para cobrir este pedido, entre na sua conta.', '/feed')) {
       return;
     }
-    Alert.alert('Em breve', 'Combinar quem cobre o pedido chega num próximo passo.');
+    if (cobrir.isPending) return;
+    Alert.alert(
+      'Cobrir este pedido?',
+      'Você assume a alimentação deste ponto na data combinada. Quem pediu será avisado.',
+      [
+        { text: 'Agora não', style: 'cancel' },
+        {
+          text: 'Quero cobrir',
+          onPress: () =>
+            cobrir.mutate(item.id, {
+              onSuccess: () => {
+                Alert.alert('Combinado!', 'Avisamos quem pediu. Obrigado por cobrir.');
+              },
+              onError: (erro) => {
+                Alert.alert('Não deu para cobrir', mensagemErroCobrir(erro));
+              },
+            }),
+        },
+      ]
+    );
   }
 
   return (
@@ -148,6 +174,7 @@ export default function ComunidadeScreen() {
           renderItem={({ item }) => (
             <Cartao
               item={item}
+              ehAutor={item.autorId === user?.id}
               onAbrir={() => abrirRegistro(item)}
               onVerPonto={() => abrirPonto(item)}
               onInteragir={() => onInteragir(item)}
@@ -250,6 +277,7 @@ function Chips({
 
 function Cartao({
   item,
+  ehAutor,
   onAbrir,
   onVerPonto,
   onInteragir,
@@ -257,6 +285,7 @@ function Cartao({
   onCobrir,
 }: {
   item: ItemFeed;
+  ehAutor: boolean;
   onAbrir: () => void;
   onVerPonto: () => void;
   onInteragir: () => void;
@@ -264,7 +293,14 @@ function Cartao({
   onCobrir: () => void;
 }) {
   if (item.formato === 'pedido') {
-    return <CartaoPedido item={item} onVerPonto={onVerPonto} onCobrir={onCobrir} />;
+    return (
+      <CartaoPedido
+        item={item}
+        ehAutor={ehAutor}
+        onVerPonto={onVerPonto}
+        onCobrir={onCobrir}
+      />
+    );
   }
   if (item.formato === 'evento') {
     return <CartaoEvento item={item} onAbrir={onAbrir} />;
@@ -332,10 +368,12 @@ function CartaoRegistro({
 
 function CartaoPedido({
   item,
+  ehAutor,
   onVerPonto,
   onCobrir,
 }: {
   item: ItemFeed;
+  ehAutor: boolean;
   onVerPonto: () => void;
   onCobrir: () => void;
 }) {
@@ -347,17 +385,21 @@ function CartaoPedido({
       {item.texto ? <Text style={styles.texto}>{item.texto}</Text> : null}
 
       <View style={styles.botoesPedido}>
-        <Pressable
-          onPress={onCobrir}
-          accessibilityRole="button"
-          accessibilityLabel="Quero cobrir"
-          style={({ pressed }) => [
-            styles.botaoCobrir,
-            pressed && styles.botaoCobrirPressed,
-          ]}
-        >
-          <Text style={styles.botaoCobrirTexto}>Quero cobrir</Text>
-        </Pressable>
+        {/* Ninguém cobre o próprio pedido: para o autor o cartão só leva ao
+            ponto (o servidor também barra com 'proprio_pedido'). */}
+        {!ehAutor ? (
+          <Pressable
+            onPress={onCobrir}
+            accessibilityRole="button"
+            accessibilityLabel="Quero cobrir"
+            style={({ pressed }) => [
+              styles.botaoCobrir,
+              pressed && styles.botaoCobrirPressed,
+            ]}
+          >
+            <Text style={styles.botaoCobrirTexto}>Quero cobrir</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={onVerPonto}
           accessibilityRole="button"
