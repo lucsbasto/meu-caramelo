@@ -30,3 +30,34 @@ insert into ponto_fotos (ponto_id, url, ordem, criado_por)
 select id, foto_url, 0, criado_por
 from pontos
 where foto_url is not null;
+
+-- ---------------------------------------------------------------------------
+-- Bucket de Storage `pontos` (antes era follow-up de infra externo). Público
+-- para leitura (getPublicUrl no cliente); escrita só de mantenedor do ponto.
+-- O caminho do arquivo é sempre `<ponto_id>/...`, então a primeira pasta do
+-- objeto identifica o ponto e amarra a permissão ao `e_mantenedor`.
+-- ---------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('pontos', 'pontos', true)
+on conflict (id) do update set public = true;
+
+-- Leitura pública (bucket público; a policy deixa a listagem/consulta explícita).
+create policy pontos_obj_select on storage.objects for select
+  using (bucket_id = 'pontos');
+
+-- Escrita presa ao mantenedor do ponto dono da primeira pasta do caminho.
+create policy pontos_obj_insert on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'pontos'
+    and public.e_mantenedor(((storage.foldername(name))[1])::uuid)
+  );
+create policy pontos_obj_update on storage.objects for update to authenticated
+  using (
+    bucket_id = 'pontos'
+    and public.e_mantenedor(((storage.foldername(name))[1])::uuid)
+  );
+create policy pontos_obj_delete on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'pontos'
+    and public.e_mantenedor(((storage.foldername(name))[1])::uuid)
+  );

@@ -48,10 +48,10 @@ export function nomeValido(nome: string): boolean {
 // Abaixo desta distância dois pontos disparam o aviso de duplicata (§6.6 Estados).
 export const DISTANCIA_DUPLICATA_M = 30;
 
-// Bucket do Storage onde as fotos dos pontos são guardadas.
-// PROVISIONAMENTO EXTERNO: criar o bucket público `pontos` no Supabase é um
-// follow-up de infra; enquanto ele não existe, o upload falha e o fluxo de
-// "salvar sem foto" (§6.6 Estados) mantém o cadastro mesmo assim.
+// Bucket do Storage onde as fotos dos pontos são guardadas. Provisionado pela
+// migration 0011 (bucket público + policies de escrita presas ao mantenedor).
+// Se o upload ainda falhar (rede/permissão), o fluxo de "salvar sem foto"
+// (§6.6 Estados) mantém o cadastro mesmo assim.
 export const BUCKET_FOTOS = 'pontos';
 
 // Textos fixos vindos direto da especificação (§6.6 Anatomia).
