@@ -1,17 +1,21 @@
 // Tela de detalhe do ponto (§6.4): cabeçalho visual, painel branco com
 // estatísticas/mantenedor/últimos registros, e barra de ação fixa.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Image,
   Linking,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +34,7 @@ import {
   podeRemoverRegistro,
   type Mantenedor,
   type PontoDetalhe,
+  type PontoFoto,
   type RegistroPonto,
 } from './dados';
 import {
@@ -50,7 +55,7 @@ export function PontoDetalheScreen({ id }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const requireAuth = useRequireAuth();
-  const { ponto, mantenedores, registros, estatisticas } = usePontoDetalhe(id);
+  const { ponto, fotos, mantenedores, registros, estatisticas } = usePontoDetalhe(id);
   const seguir = useSeguir(id, user?.id ?? null);
   const removerRegistro = useRemoverRegistro(id);
   const adopt = useAdoptPoint(id);
@@ -187,6 +192,7 @@ export function PontoDetalheScreen({ id }: Props) {
       <ScrollView bounces={false} contentContainerStyle={styles.scrollContent}>
         <Cabecalho
           ponto={p}
+          fotos={fotos.data ?? []}
           seguindo={seguir.seguindo}
           onVoltar={onVoltar}
           onSeguir={onSeguir}
@@ -303,12 +309,14 @@ function abrirComoChegar(lat: number, lng: number) {
 
 function Cabecalho({
   ponto,
+  fotos,
   seguindo,
   onVoltar,
   onSeguir,
   onCompartilhar,
 }: {
   ponto: PontoDetalhe;
+  fotos: PontoFoto[];
   seguindo: boolean;
   onVoltar: () => void;
   onSeguir: () => void;
@@ -316,10 +324,19 @@ function Cabecalho({
 }) {
   const insets = useSafeAreaInsets();
 
+  // Galeria a exibir: as fotos da tabela quando houver; senão a capa
+  // (`foto_url`) sozinha, para compatibilidade com pontos antigos.
+  const imagens =
+    fotos.length > 0
+      ? fotos.map((f) => f.url)
+      : ponto.fotoUrl
+        ? [ponto.fotoUrl]
+        : [];
+
   return (
     <View style={styles.cabecalho}>
-      {ponto.fotoUrl ? (
-        <Image source={{ uri: ponto.fotoUrl }} style={styles.cabecalhoFoto} />
+      {imagens.length > 0 ? (
+        <CarrosselFotos imagens={imagens} />
       ) : (
         <View style={styles.cabecalhoVazio}>
           <Text style={styles.cabecalhoPata}>🐾</Text>
@@ -343,6 +360,80 @@ function Cabecalho({
         </View>
       </View>
     </View>
+  );
+}
+
+// Carrossel do cabeçalho: passa as fotos sozinho a cada 2 s (§6.4). Só anima
+// quando há mais de uma; arrastar pausa o autoplay para não brigar com o dedo.
+function CarrosselFotos({ imagens }: { imagens: string[] }) {
+  const { width } = useWindowDimensions();
+  const [indice, setIndice] = useState(0);
+  const indiceRef = useRef(0);
+  const listaRef = useRef<FlatList<string>>(null);
+  const arrastandoRef = useRef(false);
+
+  useEffect(() => {
+    if (imagens.length <= 1) return;
+    const timer = setInterval(() => {
+      if (arrastandoRef.current) return;
+      // O efeito imperativo fica FORA de qualquer updater de estado (updaters
+      // precisam ser puros); o índice corrente vem do ref.
+      const proximo = (indiceRef.current + 1) % imagens.length;
+      indiceRef.current = proximo;
+      listaRef.current?.scrollToOffset({ offset: proximo * width, animated: true });
+      setIndice(proximo);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [imagens.length, width]);
+
+  // Fim do gesto: retoma o autoplay e ressincroniza o índice. Trata tanto
+  // `onScrollEndDrag` (arraste lento sem inércia — em que `onMomentumScrollEnd`
+  // pode nunca disparar e deixaria o autoplay travado) quanto o fim da inércia.
+  function aoParar(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    arrastandoRef.current = false;
+    const i = Math.round(e.nativeEvent.contentOffset.x / width);
+    indiceRef.current = i;
+    setIndice(i);
+  }
+
+  return (
+    <>
+      <FlatList
+        ref={listaRef}
+        data={imagens}
+        keyExtractor={(uri, i) => `${i}-${uri}`}
+        horizontal
+        pagingEnabled
+        bounces={false}
+        showsHorizontalScrollIndicator={false}
+        onScrollBeginDrag={() => {
+          arrastandoRef.current = true;
+        }}
+        onScrollEndDrag={aoParar}
+        onMomentumScrollEnd={aoParar}
+        renderItem={({ item }) => (
+          <Image source={{ uri: item }} style={{ width, height: ALTURA_CABECALHO }} />
+        )}
+      />
+
+      {imagens.length > 1 && (
+        <>
+          <View style={styles.contador}>
+            <Text style={styles.contadorTexto}>
+              {indice + 1}/{imagens.length}
+            </Text>
+          </View>
+          <View style={styles.bolinhas}>
+            {imagens.map((uri, i) => (
+              <View
+                key={`${i}-${uri}`}
+                style={[styles.bolinha, i === indice && styles.bolinhaAtiva]}
+              />
+            ))}
+          </View>
+        </>
+      )}
+    </>
   );
 }
 
@@ -736,6 +827,33 @@ const styles = StyleSheet.create({
   botaoCirculoPressed: { backgroundColor: 'rgba(43,29,18,0.65)' },
   iconeBotao: { fontSize: 20, color: colors.onDark, fontFamily: fonts.body },
   iconeSeguindo: { color: colors.alerta },
+
+  contador: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: SOBREPOSICAO + spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(43,29,18,0.55)',
+  },
+  contadorTexto: { fontFamily: fonts.body, fontSize: 12, color: colors.onDark },
+  bolinhas: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: SOBREPOSICAO + spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  bolinha: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  bolinhaAtiva: { backgroundColor: colors.onDark },
 
   painel: {
     marginTop: -SOBREPOSICAO,
