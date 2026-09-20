@@ -88,6 +88,7 @@ export function PontoSheet({ ponto, distanciaM, onClose, onAlimentar }: Props) {
     setExpandido(false);
     anima(expandidaRef.current, () => {
       setDados(null);
+      setPeek(0); // força nova medição na próxima abertura (evita peek stale)
       onClose();
     });
   }
@@ -107,24 +108,38 @@ export function PontoSheet({ ponto, distanciaM, onClose, onAlimentar }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ponto]);
 
-  // Assim que o peek é medido, anima da base até o snap colapsado.
+  // Anima até o snap colapsado assim que o peek é medido — e o reacompanha
+  // quando o peek muda com a folha aberta (troca direta de pin A→B, cuja altura
+  // nova só chega no onLayout seguinte). Expandido fica em 0, independe do peek.
   useEffect(() => {
-    if (dados && peek > 0 && !abertoRef.current) {
+    if (!dados || peek <= 0 || expandido) return;
+    if (!abertoRef.current) {
       abertoRef.current = true;
-      y.setValue(EXPANDIDA);
-      anima(EXPANDIDA - peek);
+      y.setValue(EXPANDIDA); // primeira abertura: sobe a partir da base
     }
+    anima(EXPANDIDA - peek);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dados, peek]);
+  }, [dados, peek, expandido]);
+
+  // Rotação/mudança de dimensão: reposiciona o translateY no snap atual — a
+  // altura recalcula com EXPANDIDA, mas o valor animado não, deixando a folha
+  // aberta com offset velho até o próximo snap/drag.
+  useEffect(() => {
+    y.setValue(dados ? (expandido ? 0 : EXPANDIDA - peek) : EXPANDIDA);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [EXPANDIDA]);
 
   // Init lazy: PanResponder criado uma vez. Os refs só são lidos dentro dos
   // handlers (pós-mount), nunca durante o render — falso positivo da regra.
   // eslint-disable-next-line react-hooks/refs
   const [pan] = useState(() =>
     PanResponder.create({
-      // Captura o gesto antes dos Pressable filhos (botões), mas só quando o
-      // movimento é vertical — assim taps nos botões continuam funcionando.
-      onMoveShouldSetPanResponderCapture: (_e, g) =>
+      // Bubble (não capture): a ScrollView filha reivindica os arrastos sobre
+      // ela e rola o conteúdo expandido; a folha só vira responder nos arrastos
+      // verticais fora da ScrollView (puxador/cabeçalho/botões — tap continua,
+      // pois só gestos de movimento chegam aqui). Capture roubava todo drag e
+      // impedia a rolagem. Termination default do Pressable devolve o gesto.
+      onMoveShouldSetPanResponder: (_e, g) =>
         Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderGrant: () => {
         y.stopAnimation();
@@ -140,12 +155,25 @@ export function PontoSheet({ ponto, distanciaM, onClose, onAlimentar }: Props) {
       onPanResponderRelease: (_e, g) => {
         const atual = yRef.current;
         const colaps = posColapsada();
-        if (g.vy > 0.9 || atual > colaps + FECHA) {
+        const meio = colaps / 2;
+        const estaExpandido = atual < meio;
+        // Arrastado abaixo do peek → fecha.
+        if (atual > colaps + FECHA) {
           fecha();
           return;
         }
-        const meio = colaps / 2;
-        snapPara(g.vy < -0.9 || atual < meio);
+        // Flick rápido pra baixo: do expandido volta ao peek; do peek, fecha.
+        if (g.vy > 0.9) {
+          if (estaExpandido) snapPara(false);
+          else fecha();
+          return;
+        }
+        // Flick rápido pra cima expande; sem flick, snap para o mais próximo.
+        if (g.vy < -0.9) {
+          snapPara(true);
+          return;
+        }
+        snapPara(estaExpandido);
       },
       // Não devolve o gesto para a ScrollView/backdrop no meio do arrasto.
       onPanResponderTerminationRequest: () => false,
