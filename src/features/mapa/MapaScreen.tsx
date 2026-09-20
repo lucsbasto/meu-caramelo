@@ -278,10 +278,6 @@ export default function MapaScreen() {
         ponto={selecionado}
         distanciaM={distanciaSelecionado}
         onClose={() => setSelecionado(null)}
-        onVerPonto={(p) => {
-          setSelecionado(null);
-          router.push(`/ponto/${p.id}`);
-        }}
         onAlimentar={(p) => {
           setSelecionado(null);
           router.push(`/ponto/${p.id}/registrar`);
