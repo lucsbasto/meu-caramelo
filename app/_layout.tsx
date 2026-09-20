@@ -9,6 +9,7 @@ import { AuthProvider } from '@/features/auth/session';
 import { OnboardingGate } from '@/features/onboarding/OnboardingGate';
 import { useFlushFilaOffline } from '@/features/ponto/useRegistro';
 import { usePushNotifications } from '@/features/notificacoes/usePushNotifications';
+import { ToastProvider } from '@/features/notificacoes/Toast';
 
 // Efeitos de push (WP14): registra o token ao logar e navega no toque (§4.5).
 // Fica dentro do AuthProvider (usa useAuth) e não renderiza nada.
@@ -29,33 +30,37 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SafeAreaProvider>
-          <StatusBar style="dark" />
-          <OnboardingGate />
-          <PushBridge />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.bg },
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            {/* Onboarding de primeira execução (§6.1), sem gesto de voltar. */}
-            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-            <Stack.Screen name="ponto/[id]/index" />
-            <Stack.Screen name="ponto/novo" />
-            <Stack.Screen name="ponto/[id]/editar" />
-            <Stack.Screen name="ponto/[id]/registrar" />
-            <Stack.Screen name="ponto/[id]/mantenedores" />
-            {/* Detalhe do registro empilhado sobre o feed (§6.10). */}
-            <Stack.Screen name="registro/[id]" />
-            {/* Busca empilhada sobre o mapa (§6.14). */}
-            <Stack.Screen name="busca" />
-            {/* Aceite de convite de co-mantenedor por deep-link (§7.4). */}
-            <Stack.Screen name="convite/[token]" />
-            {/* Login empilhado como card/modal (§6.2). */}
-            <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="auth-callback" />
-          </Stack>
+          <ToastProvider>
+            <StatusBar style="dark" />
+            <OnboardingGate />
+            <PushBridge />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.bg },
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              {/* Onboarding de primeira execução (§6.1), sem gesto de voltar. */}
+              <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+              <Stack.Screen name="ponto/[id]/index" />
+              <Stack.Screen name="ponto/novo" />
+              <Stack.Screen name="ponto/[id]/editar" />
+              <Stack.Screen name="ponto/[id]/registrar" />
+              <Stack.Screen name="ponto/[id]/mantenedores" />
+              {/* Detalhe do registro empilhado sobre o feed (§6.10). */}
+              <Stack.Screen name="registro/[id]" />
+              {/* Detalhe do pedido de ajuda — deep link de push (§4.5/§6.13). */}
+              <Stack.Screen name="pedido/[id]" />
+              {/* Busca empilhada sobre o mapa (§6.14). */}
+              <Stack.Screen name="busca" />
+              {/* Aceite de convite de co-mantenedor por deep-link (§7.4). */}
+              <Stack.Screen name="convite/[token]" />
+              {/* Login empilhado como card/modal (§6.2). */}
+              <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="auth-callback" />
+            </Stack>
+          </ToastProvider>
         </SafeAreaProvider>
       </AuthProvider>
     </QueryClientProvider>

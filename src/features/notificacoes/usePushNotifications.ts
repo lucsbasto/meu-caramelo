@@ -1,33 +1,47 @@
-import { useEffect, useRef } from 'react';
-import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter, useRootNavigationState } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from '@/features/auth/session';
 import { registrarTokenPush } from './push';
-import { resolveNotificationLink } from './deepLink';
+import { criarGatePush } from './navGate';
+import { useToast } from './Toast';
 
-// Handler de foreground (§ escopo WP14): com o app aberto, ainda mostramos o
-// aviso como banner + lista, sem badge. Definido no escopo do módulo para valer
-// para o app inteiro, uma única vez.
+// Handler de foreground (T8 #46): com o app aberto NÃO mostramos banner do SO —
+// o aviso vira toast in-app (addNotificationReceivedListener abaixo). Mantemos a
+// notificação na lista/central e sem badge. Definido no escopo do módulo para
+// valer para o app inteiro, uma única vez.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: true,
+    shouldShowBanner: false,
     shouldShowList: true,
-    shouldPlaySound: true,
+    shouldPlaySound: false,
     shouldSetBadge: false,
   }),
 });
 
-// Monta os efeitos de notificação: registra o token ao logar, re-registra
-// quando o Expo rotaciona o token, e navega para o destino (§4.5) ao tocar no
-// push — tanto com o app em background quanto no cold start.
+// Monta os efeitos de notificação: registra o token ao logar, re-registra quando
+// o Expo rotaciona o token, mostra toast in-app no foreground e navega para o
+// destino (§4.5) ao tocar no push — em background e no cold start. A navegação é
+// segurada até router+auth prontos e o usuário logado, com flush no login.
 export function usePushNotifications(): void {
   const { user } = useAuth();
   const userId = user?.id;
   const router = useRouter();
-  // Ids de response já navegados — o response de cold start chega tanto por
-  // getLastNotificationResponseAsync quanto pelo listener; deduplicamos por
-  // identifier para não empilhar a mesma tela duas vezes.
-  const tratados = useRef<Set<string>>(new Set());
+  // Navegação só é segura depois que a árvore do expo-router montou. No cold
+  // start o response chega antes disso; sem esperar, o push se perde.
+  const navState = useRootNavigationState();
+  const navReady = navState?.key != null;
+  const { showToast } = useToast();
+
+  // Gate de navegação (dedupe + hold/flush), estável entre renders.
+  const [gate] = useState(criarGatePush);
+  const podeNavegar = navReady && userId != null;
+  // Prontidão lida dentro do listener (registrado uma vez): um response que
+  // resolve tarde precisa enxergar o estado atual, não o do render que o disparou.
+  const podeNavegarRef = useRef(podeNavegar);
+  useEffect(() => {
+    podeNavegarRef.current = podeNavegar;
+  });
 
   // Registro do token: no login e a cada rotação de token do Expo.
   // Chaveado por userId (string) para não re-rodar a cada TOKEN_REFRESHED, que
@@ -42,15 +56,21 @@ export function usePushNotifications(): void {
     return () => sub.remove();
   }, [userId]);
 
-  // Toque no push -> deep link.
+  // Foreground: sem banner do SO (handler acima); mostramos toast in-app.
+  // `||` (não `??`) para um title vazio cair no body em vez de virar toast vazio.
+  useEffect(() => {
+    const sub = Notifications.addNotificationReceivedListener((notificacao) => {
+      const conteudo = notificacao.request.content;
+      showToast(conteudo.title || conteudo.body || 'Nova notificação');
+    });
+    return () => sub.remove();
+  }, [showToast]);
+
+  // Toque no push -> deep link. Listener registrado uma vez (router é estável);
+  // a prontidão vem do ref para um response que resolve tarde não se perder.
   useEffect(() => {
     function abrir(response: Notifications.NotificationResponse | null): void {
-      if (!response) return;
-      const id = response.notification.request.identifier;
-      if (tratados.current.has(id)) return;
-      tratados.current.add(id);
-      const data = response.notification.request.content.data;
-      const link = resolveNotificationLink(data);
+      const link = gate.aoTocar(response, podeNavegarRef.current);
       if (link) router.push(link as never);
     }
 
@@ -60,5 +80,12 @@ export function usePushNotifications(): void {
     // App em foreground/background: toque enquanto a sessão está viva.
     const sub = Notifications.addNotificationResponseReceivedListener(abrir);
     return () => sub.remove();
-  }, [router]);
+  }, [gate, router]);
+
+  // Flush: quando router+auth prontos e logado, navega ao alvo segurado.
+  // Cobre o cold start deslogado — o toque fica pendente até o login autenticar.
+  useEffect(() => {
+    const link = gate.aoFicarPronto(podeNavegar);
+    if (link) router.push(link as never);
+  }, [gate, podeNavegar, router]);
 }
