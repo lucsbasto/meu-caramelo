@@ -39,16 +39,43 @@ por cron ou por database webhook no INSERT de `notificacoes`.
 | `SUPABASE_SERVICE_ROLE_KEY` | plataforma | — |
 | `PUSH_TZ` | `supabase secrets set` | `America/Araguaina` |
 | `EXPO_ACCESS_TOKEN` | `supabase secrets set` | vazio (opcional) |
+| `EDGE_CRON_SECRET` | `supabase secrets set` | vazio (opcional) |
+
+Quando `EDGE_CRON_SECRET` está setado, a função exige `Authorization: Bearer
+<EDGE_CRON_SECRET>` e recusa 401 sem ele — necessário porque `verify_jwt=false`
+(config.toml) deixaria o endpoint aberto. O mesmo token vive no Vault (`select
+vault.create_secret(..., 'edge_cron_secret')`) e o heartbeat pg_cron o injeta no
+header. Sem o secret (dev/local) não há gate.
 
 ## Deploy e agendamento
+
+O gatilho é **versionado** na migration `0014_push_cron_trigger.sql` (WP14 R4
+#56): um job pg_cron de 1 em 1 minuto faz `net.http_post` (pg_net) para
+`/functions/v1/enviar-push` autenticando com o secret do Vault. pg_net é
+fire-and-forget (dispara pós-COMMIT, resposta em `net._http_response`), então o
+cron não vê o status HTTP — a idempotência da varredura (claim atômico
+`pending→sent`) cobre um tick perdido no minuto seguinte.
+
+Deploy da função e secrets (uma vez por ambiente):
 
 ```bash
 supabase functions deploy enviar-push
 supabase secrets set PUSH_TZ=America/Araguaina
+supabase secrets set EDGE_CRON_SECRET=<mesmo token do Vault>
 ```
 
-Agende de 1 em 1 minuto (pg_cron + pg_net) ou aponte um database webhook de
-INSERT em `public.notificacoes` para a função.
+Provisionamento do Vault (HITL, valores sensíveis, não versionados) — ver o
+cabeçalho de `0014_push_cron_trigger.sql`:
+
+```sql
+select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+select vault.create_secret('<mesmo token forte>',              'edge_cron_secret');
+```
+
+As extensões `pg_net` e `pg_cron` são provisionadas pela própria migration
+(`create extension if not exists`). Alternativa a pg_cron: apontar um database
+webhook de INSERT em `public.notificacoes` para a função (nudge opcional; o poll
+permanece primário).
 
 ## Testes
 

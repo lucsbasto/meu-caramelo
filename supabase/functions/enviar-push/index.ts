@@ -11,7 +11,16 @@
 // `notificacoes`; como a varredura é idempotente, o gatilho é indiferente.
 //
 // Secrets esperados: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (injetados pela
-// plataforma), PUSH_TZ (default America/Sao_Paulo), EXPO_ACCESS_TOKEN (opcional).
+// plataforma), PUSH_TZ (default America/Sao_Paulo), EXPO_ACCESS_TOKEN (opcional),
+// EDGE_CRON_SECRET (opcional; quando setado, autentica o chamador — ver abaixo).
+//
+// Autenticação do chamador: a função roda com verify_jwt=false (config.toml),
+// pois o cron→EF (WP14 R4 #56) é chamada de serviço e não carrega JWT de
+// usuário. No lugar do JWT, o heartbeat pg_cron manda `Authorization: Bearer
+// <EDGE_CRON_SECRET>` (secret do Vault). Se EDGE_CRON_SECRET estiver setado, a
+// função EXIGE esse header e recusa 401 caso contrário — sem isso, verify_jwt=
+// false deixaria o endpoint aberto. Se não estiver setado (dev/local), não há
+// gate, mantendo a invocação manual simples.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
@@ -48,7 +57,15 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  // Gate de autenticação do chamador (WP14 R4 #56). Com verify_jwt=false, o
+  // endpoint fica aberto; quando EDGE_CRON_SECRET está setado exigimos o mesmo
+  // secret no header que o heartbeat pg_cron lê do Vault.
+  const cronSecret = Deno.env.get('EDGE_CRON_SECRET') ?? '';
+  if (cronSecret && req.headers.get('Authorization') !== `Bearer ${cronSecret}`) {
+    return json({ erro: 'não autorizado' }, 401);
+  }
+
   const url = Deno.env.get('SUPABASE_URL');
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) {
