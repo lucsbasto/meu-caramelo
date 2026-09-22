@@ -28,8 +28,10 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     'expo-web-browser',
-    // Push de ponta a ponta (WP14, §7.5). Sem prop = usa o ícone/cor padrão;
-    // o canal Android é criado em runtime (features/notificacoes/push.ts).
+    // Push de ponta a ponta (WP14, §7.5). Plugin registra o canal Android e
+    // adiciona POST_NOTIFICATIONS (Android 13+). Sem opções = defaults; o canal
+    // Android é criado em runtime (features/notificacoes/push.ts). Ícone/cor/som
+    // ficam para o slice de build quando os assets existirem.
     'expo-notifications',
     // Login social nativo do Google (WP3). Lê os client ids via env.
     '@react-native-google-signin/google-signin',
@@ -43,10 +45,6 @@ const config: ExpoConfig = {
         RNMapboxMapsVersion: '11.23.1',
       },
     ],
-    // Push (WP14, §7.5). Plugin registra o canal Android e adiciona a
-    // permissão POST_NOTIFICATIONS (Android 13+). Sem opções = defaults;
-    // ícone/cor/som ficam para o slice de build quando os assets existirem.
-    'expo-notifications',
   ],
   extra: {
     eas: {
