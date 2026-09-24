@@ -11,12 +11,16 @@
  * o style no Studio (dá para publicar depois e trocar por `styleURL`).
  */
 
+import Mapbox, {
+  Camera,
+  MapView,
+  MarkerView,
+  UserLocation,
+} from '@rnmapbox/maps';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
-import Mapbox, { MapView, Camera, MarkerView, UserLocation } from '@rnmapbox/maps';
-
-import estiloCaramelo from './estilo-caramelo.json';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import estiloCaramelo from './estilo-caramelo.json';
 
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN!);
 
@@ -46,7 +50,11 @@ function statusDoPonto(horas: number | null): Status {
   return 'urgente';
 }
 
-export default function MapaScreen({ onAbrirPonto }: { onAbrirPonto: (p: Ponto) => void }) {
+export default function MapaScreen({
+  onAbrirPonto,
+}: {
+  onAbrirPonto: (p: Ponto) => void;
+}) {
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [filtro, setFiltro] = useState<Filtro>('todos');
   const [selecionado, setSelecionado] = useState<Ponto | null>(null);
@@ -73,12 +81,18 @@ export default function MapaScreen({ onAbrirPonto }: { onAbrirPonto: (p: Ponto) 
     // Atualiza o pin assim que alguém registra alimentação em qualquer ponto.
     const canal = supabase
       .channel('registros-mapa')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registros' }, payload => {
-        const pontoId = (payload.new as { ponto_id: string }).ponto_id;
-        setPontos(atual =>
-          atual.map(p => (p.id === pontoId ? { ...p, horas_desde_ultima: 0 } : p)),
-        );
-      })
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'registros' },
+        (payload) => {
+          const pontoId = (payload.new as { ponto_id: string }).ponto_id;
+          setPontos((atual) =>
+            atual.map((p) =>
+              p.id === pontoId ? { ...p, horas_desde_ultima: 0 } : p,
+            ),
+          );
+        },
+      )
       .subscribe();
 
     return () => {
@@ -89,7 +103,7 @@ export default function MapaScreen({ onAbrirPonto }: { onAbrirPonto: (p: Ponto) 
 
   const visiveis = useMemo(
     () =>
-      pontos.filter(p => {
+      pontos.filter((p) => {
         if (filtro === 'todos') return true;
         const s = statusDoPonto(p.horas_desde_ultima);
         return filtro === 'ok' ? s === 'ok' : s !== 'ok';
@@ -108,13 +122,21 @@ export default function MapaScreen({ onAbrirPonto }: { onAbrirPonto: (p: Ponto) 
         logoPosition={{ bottom: 100, left: 12 }}
         attributionPosition={{ bottom: 100, left: 96 }}
       >
-        <Camera followUserLocation followZoomLevel={15.2} animationMode="easeTo" />
+        <Camera
+          followUserLocation
+          followZoomLevel={15.2}
+          animationMode="easeTo"
+        />
         <UserLocation androidRenderMode="compass" showsUserHeadingIndicator />
 
-        {visiveis.map(p => {
+        {visiveis.map((p) => {
           const cor = CORES[statusDoPonto(p.horas_desde_ultima)];
           return (
-            <MarkerView key={p.id} coordinate={[p.lng, p.lat]} anchor={{ x: 0.5, y: 0.5 }}>
+            <MarkerView
+              key={p.id}
+              coordinate={[p.lng, p.lat]}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
               <Pressable
                 onPress={() => selecionar(p)}
                 hitSlop={8}
@@ -170,10 +192,16 @@ const FILTROS: { valor: Filtro; rotulo: string }[] = [
 ];
 
 /** Barra de filtros no topo do mapa. */
-function Chips({ valor, onChange }: { valor: Filtro; onChange: (v: Filtro) => void }) {
+function Chips({
+  valor,
+  onChange,
+}: {
+  valor: Filtro;
+  onChange: (v: Filtro) => void;
+}) {
   return (
     <View style={estilosUI.chips}>
-      {FILTROS.map(f => {
+      {FILTROS.map((f) => {
         const ativo = f.valor === valor;
         return (
           <Pressable
@@ -182,7 +210,11 @@ function Chips({ valor, onChange }: { valor: Filtro; onChange: (v: Filtro) => vo
             hitSlop={6}
             style={[estilosUI.chip, ativo && estilosUI.chipAtivo]}
           >
-            <Text style={[estilosUI.chipTexto, ativo && estilosUI.chipTextoAtivo]}>{f.rotulo}</Text>
+            <Text
+              style={[estilosUI.chipTexto, ativo && estilosUI.chipTextoAtivo]}
+            >
+              {f.rotulo}
+            </Text>
           </Pressable>
         );
       })}
@@ -202,7 +234,10 @@ function FolhaDoPonto({
 }) {
   const status = statusDoPonto(ponto.horas_desde_ultima);
   const horas = ponto.horas_desde_ultima;
-  const legenda = horas == null ? 'Sem registro ainda' : `Último registro há ${Math.round(horas)}h`;
+  const legenda =
+    horas == null
+      ? 'Sem registro ainda'
+      : `Último registro há ${Math.round(horas)}h`;
   return (
     <View style={estilosUI.folha}>
       <View style={estilosUI.folhaTopo}>
@@ -218,7 +253,10 @@ function FolhaDoPonto({
       ) : null}
       <Text style={estilosUI.folhaLegenda}>{legenda}</Text>
       <View style={estilosUI.folhaAcoes}>
-        <Pressable onPress={onFechar} style={[estilosUI.botao, estilosUI.botaoSec]}>
+        <Pressable
+          onPress={onFechar}
+          style={[estilosUI.botao, estilosUI.botaoSec]}
+        >
           <Text style={estilosUI.botaoSecTexto}>Fechar</Text>
         </Pressable>
         <Pressable onPress={onAbrir} style={estilosUI.botao}>
@@ -272,7 +310,12 @@ const estilosUI = StyleSheet.create({
   folhaNome: { flex: 1, fontSize: 17, fontWeight: '700', color: '#2B1D12' },
   folhaEndereco: { marginTop: 4, fontSize: 14, color: '#6B5A49' },
   folhaLegenda: { marginTop: 8, fontSize: 13, color: '#8A7867' },
-  folhaAcoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 },
+  folhaAcoes: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 16,
+  },
   botao: {
     paddingHorizontal: 18,
     paddingVertical: 10,

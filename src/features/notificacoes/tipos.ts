@@ -37,10 +37,16 @@ const ROTA_POR_TIPO: Record<
   ponto_vencido: { campo: 'ponto_id', rota: (id) => `/ponto/${id}` },
   ponto_novo_por_perto: { campo: 'ponto_id', rota: (id) => `/ponto/${id}` },
   promovido_principal: { campo: 'ponto_id', rota: (id) => `/ponto/${id}` },
-  lembrete_cobertura: { campo: 'ponto_id', rota: (id) => `/ponto/${id}/registrar` },
+  lembrete_cobertura: {
+    campo: 'ponto_id',
+    rota: (id) => `/ponto/${id}/registrar`,
+  },
   pedido_ajuda: { campo: 'pedido_id', rota: (id) => `/pedido/${id}` },
   cobertura_confirmada: { campo: 'pedido_id', rota: (id) => `/pedido/${id}` },
-  registro_em_ponto_seguido: { campo: 'registro_id', rota: (id) => `/registro/${id}` },
+  registro_em_ponto_seguido: {
+    campo: 'registro_id',
+    rota: (id) => `/registro/${id}`,
+  },
   comentario: { campo: 'registro_id', rota: (id) => `/registro/${id}` },
 };
 
@@ -48,7 +54,7 @@ const ROTA_POR_TIPO: Record<
 // tipo desconhecido → null (não navega); id ausente/malformado → null (descarta).
 export function rotaDeNotificacao(
   tipo: unknown,
-  dados: Record<string, unknown>
+  dados: Record<string, unknown>,
 ): string | null {
   if (!isTipoNotificacao(tipo)) return null;
   const spec = ROTA_POR_TIPO[tipo];

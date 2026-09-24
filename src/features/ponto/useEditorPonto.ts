@@ -3,20 +3,19 @@
 // atualização, desativação e saída de mantenedor. As regras de quem pode o quê
 // vivem na RLS; aqui o cliente só oferece as ações e trata os erros.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Location from 'expo-location';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-
-import { supabase } from '@/lib/supabase';
-import type { TablesInsert } from '@/lib/database.types';
-import type { ResultadoSaida } from './convites';
+import * as Location from 'expo-location';
 import { distanciaMetros } from '@/features/mapa/pontos';
+import type { TablesInsert } from '@/lib/database.types';
+import { supabase } from '@/lib/supabase';
+import type { ResultadoSaida } from './convites';
 import {
   BUCKET_FOTOS,
-  DISTANCIA_DUPLICATA_M,
-  PAPEL_PRINCIPAL,
-  coordParaEwkt,
-  geomHexParaCoord,
   type Coord,
+  coordParaEwkt,
+  DISTANCIA_DUPLICATA_M,
+  geomHexParaCoord,
+  PAPEL_PRINCIPAL,
 } from './editor';
 
 // Ponto no formato que o editor consome (coordenada real, não arredondada:
@@ -76,7 +75,7 @@ export async function geocodeReverso(coord: Coord): Promise<string | null> {
 // ---------------------------------------------------------------------------
 export async function buscarPontoProximo(
   coord: Coord,
-  ignorarId?: string
+  ignorarId?: string,
 ): Promise<PontoProximo | null> {
   const { data, error } = await supabase.rpc('pontos_proximos', {
     lat: coord.lat,
@@ -90,7 +89,10 @@ export async function buscarPontoProximo(
     if (row.id == null || row.lat == null || row.lng == null) continue;
     if (ignorarId && row.id === ignorarId) continue;
     const d = distanciaMetros(coord, { lat: row.lat, lng: row.lng });
-    if (d < DISTANCIA_DUPLICATA_M && (!maisProximo || d < maisProximo.distanciaM)) {
+    if (
+      d < DISTANCIA_DUPLICATA_M &&
+      (!maisProximo || d < maisProximo.distanciaM)
+    ) {
       maisProximo = {
         id: row.id,
         nome: row.nome ?? 'Ponto sem nome',
@@ -121,7 +123,7 @@ async function comprimirParaJpeg(localUri: string): Promise<ArrayBuffer> {
 
 export async function subirFotoPonto(
   pontoId: string,
-  localUri: string
+  localUri: string,
 ): Promise<string> {
   const arquivo = await comprimirParaJpeg(localUri);
   // Nome estável por ponto: trocar a capa sobrescreve o arquivo antigo em vez
@@ -151,14 +153,17 @@ const dbFotos = supabase as unknown as {
       eq: (col: string, val: string) => Promise<{ error: unknown }>;
     };
     select: (cols: string) => {
-      eq: (col: string, val: string) => {
+      eq: (
+        col: string,
+        val: string,
+      ) => {
         order: (
           col: string,
-          o: { ascending: boolean }
+          o: { ascending: boolean },
         ) => {
           order: (
             col: string,
-            o: { ascending: boolean }
+            o: { ascending: boolean },
           ) => Promise<{ data: FotoEditavelRow[] | null; error: unknown }>;
         };
       };
@@ -171,7 +176,7 @@ type FotoEditavelRow = { id: string; url: string; ordem: number | null };
 // Sobe uma foto da galeria com nome único (não colide com as outras do ponto).
 export async function subirFotoGaleria(
   pontoId: string,
-  localUri: string
+  localUri: string,
 ): Promise<string> {
   const arquivo = await comprimirParaJpeg(localUri);
   const nome = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
@@ -211,7 +216,10 @@ function caminhoNoBucket(url: string): string | null {
   return bruto || null;
 }
 
-export async function removerFotoPonto(fotoId: string, url: string): Promise<void> {
+export async function removerFotoPonto(
+  fotoId: string,
+  url: string,
+): Promise<void> {
   const { error } = await dbFotos.from('ponto_fotos').delete().eq('id', fotoId);
   if (error) throw error;
   // Limpeza do Storage é best-effort: a linha já saiu; um arquivo que não
@@ -235,14 +243,20 @@ async function buscarFotosEditavel(pontoId: string): Promise<FotoEditavel[]> {
     .order('ordem', { ascending: true })
     .order('criado_em', { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((f) => ({ id: f.id, url: f.url, ordem: f.ordem ?? 0 }));
+  return (data ?? []).map((f) => ({
+    id: f.id,
+    url: f.url,
+    ordem: f.ordem ?? 0,
+  }));
 }
 
 export type FotoEditavel = { id: string; url: string; ordem: number };
 
 export function useFotosEditavel(id: string | undefined) {
   return useQuery({
-    queryKey: id ? ['ponto-fotos-editavel', id] : ['ponto-fotos-editavel', 'sem-id'],
+    queryKey: id
+      ? ['ponto-fotos-editavel', id]
+      : ['ponto-fotos-editavel', 'sem-id'],
     queryFn: () => buscarFotosEditavel(id as string),
     enabled: id != null,
     staleTime: 0,
@@ -265,7 +279,8 @@ async function buscarPontoEditavel(id: string): Promise<PontoEditavel | null> {
   if (error) throw error;
   if (!data) return null;
 
-  const coord = typeof data.geom === 'string' ? geomHexParaCoord(data.geom) : null;
+  const coord =
+    typeof data.geom === 'string' ? geomHexParaCoord(data.geom) : null;
   if (!coord) return null;
 
   return {
@@ -335,7 +350,12 @@ export type DadosCriarPonto = {
 
 export function useCriarPonto() {
   return useMutation({
-    mutationFn: async ({ nome, coord, endereco, criadoPor }: DadosCriarPonto) => {
+    mutationFn: async ({
+      nome,
+      coord,
+      endereco,
+      criadoPor,
+    }: DadosCriarPonto) => {
       const novoPonto: TablesInsert<'pontos'> = {
         nome: nome.trim(),
         criado_por: criadoPor,
@@ -355,7 +375,13 @@ export function useCriarPonto() {
 
 export function useGarantirMantenedor() {
   return useMutation({
-    mutationFn: async ({ pontoId, userId }: { pontoId: string; userId: string }) => {
+    mutationFn: async ({
+      pontoId,
+      userId,
+    }: {
+      pontoId: string;
+      userId: string;
+    }) => {
       const mantenedor: TablesInsert<'ponto_mantenedores'> = {
         ponto_id: pontoId,
         user_id: userId,
@@ -364,7 +390,10 @@ export function useGarantirMantenedor() {
       // Idempotente: repetir a tentativa não duplica nem sobrescreve o papel.
       const { error } = await supabase
         .from('ponto_mantenedores')
-        .upsert(mantenedor, { onConflict: 'ponto_id,user_id', ignoreDuplicates: true });
+        .upsert(mantenedor, {
+          onConflict: 'ponto_id,user_id',
+          ignoreDuplicates: true,
+        });
       if (error) throw error;
     },
   });
@@ -404,7 +433,10 @@ export function useAtualizarPonto() {
 
 // Grava só a foto_url depois que o ponto já existe (upload é passo à parte
 // para nunca perder o cadastro por causa da imagem — §6.6 Estados).
-export async function gravarFotoUrl(id: string, fotoUrl: string | null): Promise<void> {
+export async function gravarFotoUrl(
+  id: string,
+  fotoUrl: string | null,
+): Promise<void> {
   const { error } = await supabase
     .from('pontos')
     .update({ foto_url: fotoUrl })
@@ -467,7 +499,10 @@ export function useSairMantenedor() {
   const queryClient = useQueryClient();
   // Fronteira do supabase: a RPC nova ainda não está nos tipos gerados.
   const db = supabase as unknown as {
-    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+    rpc: (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: unknown }>;
   };
   return useMutation<ResultadoSaida, Error, { id: string; userId: string }>({
     mutationFn: async ({ id }) => {
@@ -477,7 +512,9 @@ export function useSairMantenedor() {
     },
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['ponto', vars.id] });
-      queryClient.invalidateQueries({ queryKey: ['ponto', vars.id, 'mantenedores'] });
+      queryClient.invalidateQueries({
+        queryKey: ['ponto', vars.id, 'mantenedores'],
+      });
       queryClient.invalidateQueries({ queryKey: ['pontos'] });
       queryClient.invalidateQueries({ queryKey: ['meus-pontos'] });
     },

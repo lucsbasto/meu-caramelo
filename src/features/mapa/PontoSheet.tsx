@@ -15,8 +15,8 @@ import { colors, fonts, radii, spacing, touch } from '@/theme';
 import {
   formatarDistancia,
   formatarTempo,
-  rotuloStatus,
   type Ponto,
+  rotuloStatus,
 } from './pontos';
 
 type Props = {
@@ -148,7 +148,7 @@ export function PontoSheet({ ponto, distanciaM, onClose, onAlimentar }: Props) {
       onPanResponderMove: (_e, g) => {
         const prox = Math.min(
           Math.max(dragStart.current + g.dy, 0),
-          expandidaRef.current
+          expandidaRef.current,
         );
         y.setValue(prox);
       },
@@ -177,7 +177,7 @@ export function PontoSheet({ ponto, distanciaM, onClose, onAlimentar }: Props) {
       },
       // Não devolve o gesto para a ScrollView/backdrop no meio do arrasto.
       onPanResponderTerminationRequest: () => false,
-    })
+    }),
   );
 
   return (
@@ -197,87 +197,85 @@ export function PontoSheet({ ponto, distanciaM, onClose, onAlimentar }: Props) {
           ]}
         >
           {dados && (
-              <>
-                <View
-                  onLayout={(e) => setPeek(e.nativeEvent.layout.height)}
-                  style={styles.peek}
+            <>
+              <View
+                onLayout={(e) => setPeek(e.nativeEvent.layout.height)}
+                style={styles.peek}
+              >
+                <Pressable
+                  onPress={() => snapPara(!expandido)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    expandido ? 'Recolher folha' : 'Expandir folha'
+                  }
+                  hitSlop={spacing.sm}
                 >
+                  <View style={styles.puxador} />
+                  <View style={styles.cabecalho}>
+                    <View
+                      style={[styles.dot, { backgroundColor: dados.cor }]}
+                    />
+                    <Text style={styles.status}>
+                      {rotuloStatus[dados.status]}
+                    </Text>
+                  </View>
+                </Pressable>
+
+                <Text style={styles.nome}>{dados.nome}</Text>
+                {dados.endereco ? (
+                  <Text style={styles.endereco}>{dados.endereco}</Text>
+                ) : null}
+
+                <View style={styles.linhaMeta}>
+                  <Meta
+                    rotulo="Distância"
+                    valor={
+                      distanciaM != null ? formatarDistancia(distanciaM) : '—'
+                    }
+                  />
+                  <Meta
+                    rotulo="Último registro"
+                    valor={formatarTempo(dados.horasDesdeUltima)}
+                  />
+                  <Meta
+                    rotulo="Mantenedor"
+                    valor={dados.temMantenedor ? 'Tem' : 'Órfão'}
+                  />
+                </View>
+
+                <View style={styles.ctas}>
                   <Pressable
                     onPress={() => snapPara(!expandido)}
                     accessibilityRole="button"
-                    accessibilityLabel={
-                      expandido ? 'Recolher folha' : 'Expandir folha'
-                    }
-                    hitSlop={spacing.sm}
+                    style={[styles.botao, styles.botaoSecundario]}
                   >
-                    <View style={styles.puxador} />
-                    <View style={styles.cabecalho}>
-                      <View
-                        style={[styles.dot, { backgroundColor: dados.cor }]}
-                      />
-                      <Text style={styles.status}>
-                        {rotuloStatus[dados.status]}
-                      </Text>
-                    </View>
+                    <Text style={styles.botaoSecundarioTexto}>
+                      {expandido ? 'Recolher' : 'Detalhes'}
+                    </Text>
                   </Pressable>
-
-                  <Text style={styles.nome}>{dados.nome}</Text>
-                  {dados.endereco ? (
-                    <Text style={styles.endereco}>{dados.endereco}</Text>
-                  ) : null}
-
-                  <View style={styles.linhaMeta}>
-                    <Meta
-                      rotulo="Distância"
-                      valor={
-                        distanciaM != null
-                          ? formatarDistancia(distanciaM)
-                          : '—'
-                      }
-                    />
-                    <Meta
-                      rotulo="Último registro"
-                      valor={formatarTempo(dados.horasDesdeUltima)}
-                    />
-                    <Meta
-                      rotulo="Mantenedor"
-                      valor={dados.temMantenedor ? 'Tem' : 'Órfão'}
-                    />
-                  </View>
-
-                  <View style={styles.ctas}>
-                    <Pressable
-                      onPress={() => snapPara(!expandido)}
-                      accessibilityRole="button"
-                      style={[styles.botao, styles.botaoSecundario]}
-                    >
-                      <Text style={styles.botaoSecundarioTexto}>
-                        {expandido ? 'Recolher' : 'Detalhes'}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => onAlimentar(dados)}
-                      accessibilityRole="button"
-                      style={[styles.botao, styles.botaoPrimario]}
-                    >
-                      <Text style={styles.botaoPrimarioTexto}>Alimentar</Text>
-                    </Pressable>
-                  </View>
+                  <Pressable
+                    onPress={() => onAlimentar(dados)}
+                    accessibilityRole="button"
+                    style={[styles.botao, styles.botaoPrimario]}
+                  >
+                    <Text style={styles.botaoPrimarioTexto}>Alimentar</Text>
+                  </Pressable>
                 </View>
+              </View>
 
-                {/* Área revelada ao expandir (95%). Rola quando o conteúdo cresce. */}
-                <ScrollView
-                  style={styles.corpo}
-                  contentContainerStyle={styles.corpoConteudo}
-                  showsVerticalScrollIndicator={false}
-                >
-                  <Text style={styles.secaoTitulo}>Detalhes</Text>
-                  <Text style={styles.secaoTexto}>
-                    Arraste para baixo para fechar ou toque fora da folha.
-                  </Text>
-                </ScrollView>
-              </>
-            )}
+              {/* Área revelada ao expandir (95%). Rola quando o conteúdo cresce. */}
+              <ScrollView
+                style={styles.corpo}
+                contentContainerStyle={styles.corpoConteudo}
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.secaoTitulo}>Detalhes</Text>
+                <Text style={styles.secaoTexto}>
+                  Arraste para baixo para fechar ou toque fora da folha.
+                </Text>
+              </ScrollView>
+            </>
+          )}
         </Animated.View>
       </View>
     </Modal>

@@ -4,10 +4,10 @@
 // nem as RPCs novas (regen contra o hosted é follow-up), então casteamos na
 // fronteira do supabase — igual às notas dos WPs anteriores.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/session';
-import type { Mantenedor } from './dados';
+import { supabase } from '@/lib/supabase';
 import type { ResultadoSaida } from './convites';
+import type { Mantenedor } from './dados';
 import {
   buscarMantenedores,
   chaveMantenedores,

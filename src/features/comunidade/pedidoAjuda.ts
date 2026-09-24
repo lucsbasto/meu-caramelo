@@ -32,7 +32,7 @@ function paraISODate(d: Date): string {
 export function dataAlvoISO(
   chip: QuandoChip,
   escolhida: Date | null,
-  agora: Date = new Date()
+  agora: Date = new Date(),
 ): string | null {
   if (chip === 'hoje') return paraISODate(agora);
   if (chip === 'amanha') {
@@ -52,7 +52,10 @@ export function validarPedido(entrada: {
   dataISO: string | null;
 }): ValidacaoPedido {
   if (!entrada.dataISO) {
-    return { ok: false, erro: 'Escolha o dia em que o ponto vai ficar descoberto.' };
+    return {
+      ok: false,
+      erro: 'Escolha o dia em que o ponto vai ficar descoberto.',
+    };
   }
   if (entrada.texto.trim().length === 0) {
     return { ok: false, erro: 'Escreva um recado para quem pode cobrir.' };

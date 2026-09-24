@@ -1,44 +1,44 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
+import Constants from 'expo-constants';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  TextInput,
-  Switch,
-  StyleSheet,
   ActivityIndicator,
-  ScrollView,
   Alert,
+  Image,
   Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import Constants from 'expo-constants';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
-import { colors, spacing, radii, touch, fonts } from '@/theme';
-import { supabase } from '@/lib/supabase';
-import { queryClient } from '@/lib/query';
-import type { Tables } from '@/lib/database.types';
+import { LoginWall } from '@/features/auth/LoginWall';
 import { useAuth } from '@/features/auth/session';
 import { signOut } from '@/features/auth/signOut';
-import { LoginWall } from '@/features/auth/LoginWall';
+import type { Tables } from '@/lib/database.types';
+import { queryClient } from '@/lib/query';
+import { supabase } from '@/lib/supabase';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import {
+  APAGAR_CONTA_MENSAGEM,
+  APAGAR_CONTA_TITULO,
+  type ChaveNotificacao,
   NOTIFICACOES,
   RAIOS,
-  type ChaveNotificacao,
   type RaioM,
-  APAGAR_CONTA_TITULO,
-  APAGAR_CONTA_MENSAGEM,
 } from './configuracoes';
 import {
-  usePreferencias,
-  useSalvarPreferencias,
+  type Bloqueado,
+  useApagarConta,
   useBloqueados,
   useDesbloquear,
-  useApagarConta,
-  type Bloqueado,
+  usePreferencias,
+  useSalvarPreferencias,
 } from './useConfiguracoes';
 
 const TERMOS_URL = 'https://meucaramelo.app/termos';
@@ -59,7 +59,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 
 function abrirLink(url: string) {
   Linking.openURL(url).catch(() =>
-    Alert.alert('Não foi possível abrir', 'Tente de novo mais tarde.')
+    Alert.alert('Não foi possível abrir', 'Tente de novo mais tarde.'),
   );
 }
 
@@ -89,7 +89,13 @@ export default function ConfiguracoesScreen() {
   return <ConfiguracoesLogado userId={user.id} email={user.email ?? '—'} />;
 }
 
-function ConfiguracoesLogado({ userId, email }: { userId: string; email: string }) {
+function ConfiguracoesLogado({
+  userId,
+  email,
+}: {
+  userId: string;
+  email: string;
+}) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Cabecalho />
@@ -109,7 +115,11 @@ function Cabecalho() {
   const router = useRouter();
   return (
     <View style={styles.cabecalho}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.voltar}>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={8}
+        style={styles.voltar}
+      >
         <Text style={styles.voltarLabel}>‹ Voltar</Text>
       </Pressable>
       <Text style={styles.cabecalhoTitulo}>Configurações</Text>
@@ -146,7 +156,10 @@ function SecaoConta({
   if (isLoading || !profile) {
     return (
       <Secao titulo="Conta">
-        <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.md }} />
+        <ActivityIndicator
+          color={colors.caramelo}
+          style={{ marginVertical: spacing.md }}
+        />
       </Secao>
     );
   }
@@ -163,7 +176,9 @@ function EditarConta({ profile, email }: { profile: Profile; email: string }) {
   const [bairro, setBairro] = useState(profile.bairro ?? '');
   // Foto só pré-visualizada: o bucket de avatar ainda não foi provisionado
   // (mesmo estado do editar em Perfil). Upload fica para follow-up.
-  const [localAvatar, setLocalAvatar] = useState<string | null>(profile.avatar_url);
+  const [localAvatar, setLocalAvatar] = useState<string | null>(
+    profile.avatar_url,
+  );
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -178,13 +193,19 @@ function EditarConta({ profile, email }: { profile: Profile; email: string }) {
       Alert.alert('Pronto', 'Conta atualizada.');
     },
     onError: (err) =>
-      Alert.alert('Erro', err instanceof Error ? err.message : 'Não deu para salvar.'),
+      Alert.alert(
+        'Erro',
+        err instanceof Error ? err.message : 'Não deu para salvar.',
+      ),
   });
 
   async function pickPhoto() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permissão necessária', 'Libere o acesso às fotos para escolher um avatar.');
+      Alert.alert(
+        'Permissão necessária',
+        'Libere o acesso às fotos para escolher um avatar.',
+      );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -193,13 +214,15 @@ function EditarConta({ profile, email }: { profile: Profile; email: string }) {
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled && result.assets[0]) setLocalAvatar(result.assets[0].uri);
+    if (!result.canceled && result.assets[0])
+      setLocalAvatar(result.assets[0].uri);
   }
 
   const canSave =
     nome.trim().length > 0 &&
     !mutation.isPending &&
-    (nome.trim() !== profile.nome || (bairro.trim() || null) !== (profile.bairro ?? null));
+    (nome.trim() !== profile.nome ||
+      (bairro.trim() || null) !== (profile.bairro ?? null));
 
   return (
     <View style={{ gap: spacing.lg }}>
@@ -267,9 +290,14 @@ function SecaoNotificacoes({ userId }: { userId: string }) {
     return (
       <Secao titulo="Notificações">
         {isError ? (
-          <Text style={styles.erro}>Não deu para carregar suas preferências.</Text>
+          <Text style={styles.erro}>
+            Não deu para carregar suas preferências.
+          </Text>
         ) : (
-          <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.md }} />
+          <ActivityIndicator
+            color={colors.caramelo}
+            style={{ marginVertical: spacing.md }}
+          />
         )}
       </Secao>
     );
@@ -315,7 +343,11 @@ function SecaoNotificacoes({ userId }: { userId: string }) {
                 accessibilityRole="button"
                 accessibilityState={{ selected: ativo }}
               >
-                <Text style={[styles.chipLabel, ativo && styles.chipLabelAtivo]}>{rotulo}</Text>
+                <Text
+                  style={[styles.chipLabel, ativo && styles.chipLabelAtivo]}
+                >
+                  {rotulo}
+                </Text>
               </Pressable>
             );
           })}
@@ -336,7 +368,10 @@ function SecaoPrivacidade() {
           bairro. Controles de visibilidade chegam depois.
         </Text>
       </View>
-      <LinkRow rotulo="Política de privacidade" onPress={() => abrirLink(PRIVACIDADE_URL)} />
+      <LinkRow
+        rotulo="Política de privacidade"
+        onPress={() => abrirLink(PRIVACIDADE_URL)}
+      />
     </Secao>
   );
 }
@@ -348,19 +383,30 @@ function SecaoBloqueados({ userId }: { userId: string }) {
   return (
     <Secao titulo="Bloqueados">
       {isLoading ? (
-        <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.md }} />
+        <ActivityIndicator
+          color={colors.caramelo}
+          style={{ marginVertical: spacing.md }}
+        />
       ) : isError ? (
         <Text style={styles.erro}>Não deu para carregar sua lista.</Text>
       ) : !bloqueados || bloqueados.length === 0 ? (
         <Text style={styles.rowDescricao}>Você não bloqueou ninguém.</Text>
       ) : (
-        bloqueados.map((b) => <LinhaBloqueado key={b.id} bloqueado={b} userId={userId} />)
+        bloqueados.map((b) => (
+          <LinhaBloqueado key={b.id} bloqueado={b} userId={userId} />
+        ))
       )}
     </Secao>
   );
 }
 
-function LinhaBloqueado({ bloqueado, userId }: { bloqueado: Bloqueado; userId: string }) {
+function LinhaBloqueado({
+  bloqueado,
+  userId,
+}: {
+  bloqueado: Bloqueado;
+  userId: string;
+}) {
   const desbloquear = useDesbloquear(userId);
   return (
     <View style={styles.bloqueadoRow}>
@@ -392,8 +438,14 @@ function SecaoSobre() {
         <Text style={styles.rowValor}>{versao}</Text>
       </View>
       <LinkRow rotulo="Termos de uso" onPress={() => abrirLink(TERMOS_URL)} />
-      <LinkRow rotulo="Política de privacidade" onPress={() => abrirLink(PRIVACIDADE_URL)} />
-      <LinkRow rotulo="Falar com a gente" onPress={() => abrirLink(CONTATO_URL)} />
+      <LinkRow
+        rotulo="Política de privacidade"
+        onPress={() => abrirLink(PRIVACIDADE_URL)}
+      />
+      <LinkRow
+        rotulo="Falar com a gente"
+        onPress={() => abrirLink(CONTATO_URL)}
+      />
     </Secao>
   );
 }
@@ -412,7 +464,10 @@ function SairDaConta() {
           try {
             await signOut();
           } catch (e) {
-            Alert.alert('Erro', e instanceof Error ? e.message : 'Não deu para sair agora.');
+            Alert.alert(
+              'Erro',
+              e instanceof Error ? e.message : 'Não deu para sair agora.',
+            );
             setSaindo(false);
           }
         },
@@ -448,7 +503,9 @@ function ApagarConta() {
             onError: (err) =>
               Alert.alert(
                 'Erro',
-                err instanceof Error ? err.message : 'Não deu para apagar a conta agora.'
+                err instanceof Error
+                  ? err.message
+                  : 'Não deu para apagar a conta agora.',
               ),
           }),
       },
@@ -471,7 +528,13 @@ function ApagarConta() {
 }
 
 // ── Primitivas de layout ────────────────────────────────────────────────────
-function Secao({ titulo, children }: { titulo?: string; children: React.ReactNode }) {
+function Secao({
+  titulo,
+  children,
+}: {
+  titulo?: string;
+  children: React.ReactNode;
+}) {
   return (
     <View style={{ gap: spacing.md }}>
       {titulo ? <Text style={styles.secaoTitulo}>{titulo}</Text> : null}
@@ -496,12 +559,18 @@ function LinkRow({ rotulo, onPress }: { rotulo: string; onPress: () => void }) {
 function Avatar({ url, size }: { url: string | null; size: number }) {
   if (url) {
     return (
-      <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2 }} />
+      <Image
+        source={{ uri: url }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+      />
     );
   }
   return (
     <View
-      style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}
+      style={[
+        styles.avatarFallback,
+        { width: size, height: size, borderRadius: size / 2 },
+      ]}
     >
       <Text style={[styles.avatarInitial, { fontSize: size * 0.4 }]}>🐾</Text>
     </View>
@@ -528,7 +597,11 @@ const styles = StyleSheet.create({
   },
   voltar: { minWidth: 72, minHeight: touch.min, justifyContent: 'center' },
   voltarLabel: { fontFamily: fonts.body, fontSize: 16, color: colors.caramelo },
-  cabecalhoTitulo: { fontFamily: fonts.title, fontSize: 18, color: colors.text },
+  cabecalhoTitulo: {
+    fontFamily: fonts.title,
+    fontSize: 18,
+    color: colors.text,
+  },
   content: { padding: spacing.xl, gap: spacing.xl },
 
   secaoTitulo: { fontFamily: fonts.title, fontSize: 18, color: colors.text },
@@ -542,7 +615,11 @@ const styles = StyleSheet.create({
   },
 
   field: { gap: spacing.sm },
-  fieldLabel: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
+  fieldLabel: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
   input: {
     height: 54,
     minHeight: touch.min,
@@ -557,7 +634,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputDisabled: { backgroundColor: colors.bg },
-  inputDisabledText: { fontFamily: fonts.body, fontSize: 16, color: colors.textTertiary },
+  inputDisabledText: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.textTertiary,
+  },
 
   avatarPick: { alignItems: 'center', gap: spacing.sm },
   avatarFallback: {
@@ -576,7 +657,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryBtnPressed: { backgroundColor: colors.carameloPressed },
-  primaryLabel: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.onDark },
+  primaryLabel: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.onDark,
+  },
   disabled: { opacity: 0.5 },
 
   switchRow: {
@@ -586,9 +672,23 @@ const styles = StyleSheet.create({
     minHeight: touch.min,
   },
   switchTexto: { flex: 1, gap: 2 },
-  rowTitulo: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.text },
-  rowDescricao: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.textTertiary },
-  rowValor: { fontFamily: fonts.body, fontSize: 16, color: colors.textSecondary },
+  rowTitulo: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  rowDescricao: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textTertiary,
+  },
+  rowValor: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
 
   raioBloco: {
     gap: spacing.sm,
@@ -596,7 +696,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingTop: spacing.md,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
   chip: {
     minHeight: touch.chip,
     paddingHorizontal: spacing.lg,
@@ -607,7 +712,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipAtivo: { backgroundColor: colors.caramelo, borderColor: colors.caramelo },
-  chipLabel: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  chipLabel: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
   chipLabelAtivo: { color: colors.onDark },
 
   linkRow: {
@@ -625,16 +735,45 @@ const styles = StyleSheet.create({
     minHeight: touch.min,
   },
 
-  bloqueadoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: touch.min },
-  bloqueadoNome: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },
-  desbloquearBtn: { minHeight: touch.min, justifyContent: 'center', paddingHorizontal: spacing.sm },
+  bloqueadoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: touch.min,
+  },
+  bloqueadoNome: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.text,
+  },
+  desbloquearBtn: {
+    minHeight: touch.min,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
 
-  linkLabel: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.caramelo },
+  linkLabel: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
   erro: { fontFamily: fonts.body, fontSize: 14, color: colors.alerta },
   pressed: { opacity: 0.6 },
 
-  sairBtn: { minHeight: touch.min, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md },
-  sairLabel: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.alerta },
+  sairBtn: {
+    minHeight: touch.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+  },
+  sairLabel: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.alerta,
+  },
   apagarBtn: {
     minHeight: touch.min,
     alignItems: 'center',
@@ -643,5 +782,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  apagarLabel: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.alerta },
+  apagarLabel: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.alerta,
+  },
 });

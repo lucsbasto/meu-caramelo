@@ -2,6 +2,9 @@
 // conversar sobre ele — cabeçalho, o que foi deixado, foto/observação, barra de
 // ações (coração otimista, comentários, compartilhar), lista de comentários e
 // campo fixo no rodapé. Visitante lê livre; agir cai na parede de login (§7.1).
+
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,21 +21,18 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-
-import { colors, fonts, radii, spacing, touch } from '@/theme';
 import { useAuth } from '@/features/auth/session';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
-import { ROTULOS_TIPO, podeRemoverRegistro } from '@/features/ponto/dados';
+import { podeRemoverRegistro, ROTULOS_TIPO } from '@/features/ponto/dados';
 import {
   buscarMantenedores,
   chaveMantenedores,
 } from '@/features/ponto/usePontoDetalhe';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import {
+  type Comentario,
   formatarDataHoraCompleta,
   formatarTempoComentario,
-  type Comentario,
   type RegistroDetalhe,
 } from './dados';
 import {
@@ -52,7 +52,10 @@ export function RegistroDetalheScreen({ id }: Props) {
   const { user } = useAuth();
   const requireAuth = useRequireAuth();
 
-  const { registro, comentarios, reacoes } = useRegistroDetalhe(id, user?.id ?? null);
+  const { registro, comentarios, reacoes } = useRegistroDetalhe(
+    id,
+    user?.id ?? null,
+  );
   const reagir = useReagir(id, user?.id ?? null);
   const comentar = useComentar(id);
   const remover = useRemoverRegistro(id);
@@ -63,7 +66,9 @@ export function RegistroDetalheScreen({ id }: Props) {
   // Só busca quem mantém o ponto quando já temos o registro — decide se o menu
   // de três pontos mostra "remover" (autor ou mantenedor, §6.10).
   const mantenedores = useQuery({
-    queryKey: reg ? chaveMantenedores(reg.pontoId) : ['ponto', 'sem-id', 'mantenedores'],
+    queryKey: reg
+      ? chaveMantenedores(reg.pontoId)
+      : ['ponto', 'sem-id', 'mantenedores'],
     queryFn: () => buscarMantenedores(reg!.pontoId),
     enabled: reg != null,
   });
@@ -81,17 +86,23 @@ export function RegistroDetalheScreen({ id }: Props) {
   // Registro removido (§6.10 Estados): "Este registro foi removido" e nada mais.
   // Cobre o data === null (removido por outro / após remover aqui) e o erro.
   if (registro.isError || reg == null) {
-    return <RegistroRemovido onVoltar={() => router.back()} temErro={registro.isError} />;
+    return (
+      <RegistroRemovido
+        onVoltar={() => router.back()}
+        temErro={registro.isError}
+      />
+    );
   }
 
   const podeRemover = podeRemoverRegistro(
     { userId: reg.userId },
     user?.id ?? null,
-    mantenedores.data ?? []
+    mantenedores.data ?? [],
   );
 
   function onReagir() {
-    if (!requireAuth('Para reagir, entre na sua conta.', `/registro/${id}`)) return;
+    if (!requireAuth('Para reagir, entre na sua conta.', `/registro/${id}`))
+      return;
     reagir.mutate(!(reacoes.data?.euReagi ?? false));
   }
 
@@ -102,7 +113,9 @@ export function RegistroDetalheScreen({ id }: Props) {
 
   async function onCompartilhar() {
     try {
-      await Share.share({ message: `${reg!.pontoNome} — acompanhe em Meu Caramelo.` });
+      await Share.share({
+        message: `${reg!.pontoNome} — acompanhe em Meu Caramelo.`,
+      });
     } catch {
       // folha nativa cancelada/indisponível: sem ação
     }
@@ -111,7 +124,8 @@ export function RegistroDetalheScreen({ id }: Props) {
   function onEnviarComentario() {
     const limpo = texto.trim();
     if (!limpo) return;
-    if (!requireAuth('Para comentar, entre na sua conta.', `/registro/${id}`)) return;
+    if (!requireAuth('Para comentar, entre na sua conta.', `/registro/${id}`))
+      return;
     const userId = user?.id;
     if (!userId) return; // requireAuth garante sessão; guarda só para tipagem
     comentar.mutate(
@@ -120,7 +134,7 @@ export function RegistroDetalheScreen({ id }: Props) {
         onSuccess: () => setTexto(''),
         onError: () =>
           Alert.alert('Não deu para comentar', 'Tente de novo em instantes.'),
-      }
+      },
     );
   }
 
@@ -129,18 +143,21 @@ export function RegistroDetalheScreen({ id }: Props) {
       text: string;
       style?: 'cancel' | 'destructive';
       onPress?: () => void;
-    }[] = [
-      { text: 'Denunciar', onPress: onDenunciar },
-    ];
+    }[] = [{ text: 'Denunciar', onPress: onDenunciar }];
     if (podeRemover) {
-      opcoes.push({ text: 'Remover registro', style: 'destructive', onPress: onRemover });
+      opcoes.push({
+        text: 'Remover registro',
+        style: 'destructive',
+        onPress: onRemover,
+      });
     }
     opcoes.push({ text: 'Cancelar', style: 'cancel' });
     Alert.alert('Registro', undefined, opcoes);
   }
 
   function onDenunciar() {
-    if (!requireAuth('Para denunciar, entre na sua conta.', `/registro/${id}`)) return;
+    if (!requireAuth('Para denunciar, entre na sua conta.', `/registro/${id}`))
+      return;
     const userId = user?.id;
     if (!userId) return;
     Alert.alert('Denunciar registro', 'Enviar este registro para revisão?', [
@@ -150,9 +167,15 @@ export function RegistroDetalheScreen({ id }: Props) {
         onPress: () =>
           denunciar.mutate(userId, {
             onSuccess: () =>
-              Alert.alert('Obrigado', 'Recebemos sua denúncia e vamos revisar.'),
+              Alert.alert(
+                'Obrigado',
+                'Recebemos sua denúncia e vamos revisar.',
+              ),
             onError: () =>
-              Alert.alert('Não deu para denunciar', 'Tente de novo em instantes.'),
+              Alert.alert(
+                'Não deu para denunciar',
+                'Tente de novo em instantes.',
+              ),
           }),
       },
     ]);
@@ -170,7 +193,10 @@ export function RegistroDetalheScreen({ id }: Props) {
             // técnico — o hook já marcou o registro como removido.
             onError: (erro) => {
               if (!(erro instanceof RegistroNaoRemovidoError)) {
-                Alert.alert('Não deu para remover', 'Tente de novo em instantes.');
+                Alert.alert(
+                  'Não deu para remover',
+                  'Tente de novo em instantes.',
+                );
               }
             },
           }),
@@ -189,7 +215,10 @@ export function RegistroDetalheScreen({ id }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={insets.top + 44}
       >
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
           <CabecalhoRegistro
             registro={reg}
             onPonto={() => router.push(`/ponto/${reg.pontoId}`)}
@@ -198,7 +227,11 @@ export function RegistroDetalheScreen({ id }: Props) {
           <OQueFoiDeixado registro={reg} />
 
           {reg.fotoUrl ? (
-            <Image source={{ uri: reg.fotoUrl }} style={styles.foto} resizeMode="cover" />
+            <Image
+              source={{ uri: reg.fotoUrl }}
+              style={styles.foto}
+              resizeMode="cover"
+            />
           ) : null}
 
           {reg.observacao ? (
@@ -244,14 +277,22 @@ function RegistroRemovido({
       <BarraTopo onVoltar={onVoltar} />
       <View style={styles.centro}>
         <Text style={styles.removidoTexto}>
-          {temErro ? 'Não deu para carregar este registro.' : 'Este registro foi removido'}
+          {temErro
+            ? 'Não deu para carregar este registro.'
+            : 'Este registro foi removido'}
         </Text>
       </View>
     </View>
   );
 }
 
-function BarraTopo({ onVoltar, onMenu }: { onVoltar: () => void; onMenu?: () => void }) {
+function BarraTopo({
+  onVoltar,
+  onMenu,
+}: {
+  onVoltar: () => void;
+  onMenu?: () => void;
+}) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.barraTopo, { paddingTop: insets.top + spacing.xs }]}>
@@ -296,7 +337,9 @@ function CabecalhoRegistro({
         <Pressable onPress={onPonto} hitSlop={6}>
           <Text style={styles.cabecalhoPonto}>{registro.pontoNome}</Text>
         </Pressable>
-        <Text style={styles.cabecalhoData}>{formatarDataHoraCompleta(registro.criadoEm)}</Text>
+        <Text style={styles.cabecalhoData}>
+          {formatarDataHoraCompleta(registro.criadoEm)}
+        </Text>
       </View>
     </View>
   );
@@ -306,10 +349,20 @@ function CabecalhoRegistro({
 function OQueFoiDeixado({ registro }: { registro: RegistroDetalhe }) {
   const temTipos = registro.tipos.length > 0;
   const partesAnimais: string[] = [];
-  if (registro.caes) partesAnimais.push(`${registro.caes} ${registro.caes === 1 ? 'cão' : 'cães'}`);
-  if (registro.gatos) partesAnimais.push(`${registro.gatos} ${registro.gatos === 1 ? 'gato' : 'gatos'}`);
+  if (registro.caes)
+    partesAnimais.push(
+      `${registro.caes} ${registro.caes === 1 ? 'cão' : 'cães'}`,
+    );
+  if (registro.gatos)
+    partesAnimais.push(
+      `${registro.gatos} ${registro.gatos === 1 ? 'gato' : 'gatos'}`,
+    );
 
-  if (!temTipos && partesAnimais.length === 0 && registro.quantidadeKg == null) {
+  if (
+    !temTipos &&
+    partesAnimais.length === 0 &&
+    registro.quantidadeKg == null
+  ) {
     return null;
   }
 
@@ -329,7 +382,9 @@ function OQueFoiDeixado({ registro }: { registro: RegistroDetalhe }) {
         <Text style={styles.deixadoDetalhe}>
           {[
             ...partesAnimais,
-            registro.quantidadeKg != null ? `${registro.quantidadeKg} kg` : null,
+            registro.quantidadeKg != null
+              ? `${registro.quantidadeKg} kg`
+              : null,
           ]
             .filter(Boolean)
             .join(' · ')}
@@ -368,7 +423,11 @@ function BarraAcoes({
           {euReagi ? '♥' : '♡'}
         </Text>
         {count > 0 ? (
-          <Text style={[styles.acaoContador, euReagi && styles.acaoContadorAtivo]}>{count}</Text>
+          <Text
+            style={[styles.acaoContador, euReagi && styles.acaoContadorAtivo]}
+          >
+            {count}
+          </Text>
         ) : null}
       </Pressable>
 
@@ -408,13 +467,24 @@ function ListaComentarios({
   erro: boolean;
 }) {
   if (carregando) {
-    return <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.lg }} />;
+    return (
+      <ActivityIndicator
+        color={colors.caramelo}
+        style={{ marginVertical: spacing.lg }}
+      />
+    );
   }
   if (erro) {
-    return <Text style={styles.comentariosErro}>Não deu para carregar os comentários.</Text>;
+    return (
+      <Text style={styles.comentariosErro}>
+        Não deu para carregar os comentários.
+      </Text>
+    );
   }
   if (comentarios.length === 0) {
-    return <Text style={styles.comentariosVazio}>Nenhum comentário ainda.</Text>;
+    return (
+      <Text style={styles.comentariosVazio}>Nenhum comentário ainda.</Text>
+    );
   }
   return (
     <View style={styles.comentarios}>
@@ -432,7 +502,9 @@ function LinhaComentario({ comentario }: { comentario: Comentario }) {
       <View style={styles.comentarioCorpo}>
         <View style={styles.comentarioTopo}>
           <Text style={styles.comentarioNome}>{comentario.autorNome}</Text>
-          <Text style={styles.comentarioTempo}>{formatarTempoComentario(comentario.criadoEm)}</Text>
+          <Text style={styles.comentarioTempo}>
+            {formatarTempoComentario(comentario.criadoEm)}
+          </Text>
         </View>
         <Text style={styles.comentarioTexto}>{comentario.texto}</Text>
       </View>
@@ -496,7 +568,10 @@ function Avatar({ url, size }: { url: string | null; size: number }) {
   }
   return (
     <View
-      style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}
+      style={[
+        styles.avatarFallback,
+        { width: size, height: size, borderRadius: size / 2 },
+      ]}
     >
       <Text style={{ fontSize: size * 0.45 }}>🐾</Text>
     </View>
@@ -543,8 +618,17 @@ const styles = StyleSheet.create({
   cabecalho: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cabecalhoInfo: { flex: 1, gap: 2 },
   cabecalhoNome: { fontFamily: fonts.title, fontSize: 17, color: colors.text },
-  cabecalhoPonto: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.caramelo },
-  cabecalhoData: { fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
+  cabecalhoPonto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
+  cabecalhoData: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
 
   deixado: { gap: spacing.sm },
   deixadoTitulo: { fontFamily: fonts.title, fontSize: 15, color: colors.text },
@@ -555,11 +639,30 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: colors.verdeLightBg,
   },
-  seloTexto: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: colors.verde },
-  deixadoDetalhe: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
+  seloTexto: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.verde,
+  },
+  deixadoDetalhe: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
 
-  foto: { width: '100%', height: 240, borderRadius: radii.card, backgroundColor: colors.border },
-  observacao: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
+  foto: {
+    width: '100%',
+    height: 240,
+    borderRadius: radii.card,
+    backgroundColor: colors.border,
+  },
+  observacao: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text,
+  },
 
   acoes: {
     flexDirection: 'row',
@@ -572,16 +675,38 @@ const styles = StyleSheet.create({
   acao: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   acaoIcone: { fontSize: 22, color: colors.textSecondary },
   acaoIconeAtivo: { color: colors.alerta },
-  acaoContador: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
+  acaoContador: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
   acaoContadorAtivo: { color: colors.alerta },
 
   comentarios: { gap: spacing.lg },
   comentario: { flexDirection: 'row', gap: spacing.sm },
   comentarioCorpo: { flex: 1, gap: 2 },
-  comentarioTopo: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  comentarioNome: { fontFamily: fonts.body, fontSize: 14, fontWeight: '700', color: colors.text },
-  comentarioTempo: { fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
-  comentarioTexto: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textSecondary },
+  comentarioTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  comentarioNome: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  comentarioTempo: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
+  comentarioTexto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
   comentariosVazio: {
     fontFamily: fonts.body,
     fontSize: 14,
@@ -630,7 +755,11 @@ const styles = StyleSheet.create({
   },
   campoBotaoPressed: { backgroundColor: colors.carameloPressed },
   campoBotaoDesabilitado: { opacity: 0.4 },
-  campoBotaoIcone: { fontSize: 20, color: colors.onDark, fontFamily: fonts.body },
+  campoBotaoIcone: {
+    fontSize: 20,
+    color: colors.onDark,
+    fontFamily: fonts.body,
+  },
 
   avatarFallback: {
     backgroundColor: colors.verdeLightBg,

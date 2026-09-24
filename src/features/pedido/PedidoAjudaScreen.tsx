@@ -2,9 +2,17 @@
 // deep link `/pedido/:id` abrir uma tela real. Detalhe/cobertura completos ficam
 // para o WP13. Estados: carregando, não-encontrado (id inexistente, sem crash),
 // e o pedido carregado.
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useRouter } from 'expo-router';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing, touch } from '@/theme';
 import { ROTULOS_STATUS } from './dados';
 import { usePedidoAjuda } from './usePedidoAjuda';
@@ -15,7 +23,11 @@ function formatarData(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  return d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 export function PedidoAjudaScreen({ id }: Props) {
@@ -48,7 +60,9 @@ export function PedidoAjudaScreen({ id }: Props) {
         <BarraTopo onVoltar={voltar} />
         <View style={styles.centro}>
           <Text style={styles.vazioTexto}>
-            {isError ? 'Não deu para carregar este pedido.' : 'Pedido não encontrado.'}
+            {isError
+              ? 'Não deu para carregar este pedido.'
+              : 'Pedido não encontrado.'}
           </Text>
         </View>
       </View>
@@ -65,7 +79,10 @@ export function PedidoAjudaScreen({ id }: Props) {
           <Text style={styles.seloTexto}>{ROTULOS_STATUS[pedido.status]}</Text>
         </View>
 
-        <Pressable onPress={() => router.push(`/ponto/${pedido.pontoId}`)} hitSlop={6}>
+        <Pressable
+          onPress={() => router.push(`/ponto/${pedido.pontoId}`)}
+          hitSlop={6}
+        >
           <Text style={styles.ponto}>{pedido.pontoNome}</Text>
         </Pressable>
 
@@ -99,7 +116,12 @@ function BarraTopo({ onVoltar }: { onVoltar: () => void }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  centro: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
   vazioTexto: {
     fontFamily: fonts.body,
     fontSize: 16,
@@ -117,7 +139,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     backgroundColor: colors.surface,
   },
-  botaoTopo: { width: touch.min, height: touch.min, alignItems: 'center', justifyContent: 'center' },
+  botaoTopo: {
+    width: touch.min,
+    height: touch.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   botaoTopoIcone: { fontSize: 24, color: colors.text, fontFamily: fonts.body },
   titulo: { fontFamily: fonts.title, fontSize: 17, color: colors.text },
   pressed: { opacity: 0.6 },
@@ -130,8 +157,23 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: colors.verdeLightBg,
   },
-  seloTexto: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: colors.verde },
-  ponto: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.caramelo },
-  texto: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24, color: colors.text },
+  seloTexto: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.verde,
+  },
+  ponto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
+  texto: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text,
+  },
   meta: { fontFamily: fonts.body, fontSize: 13, color: colors.textTertiary },
 });

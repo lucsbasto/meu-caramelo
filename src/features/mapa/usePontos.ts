@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { normalizarPonto, type Ponto } from './pontos';
 
@@ -46,7 +46,7 @@ export function usePontos(centro: Centro | null) {
         { event: 'INSERT', schema: 'public', table: 'registros' },
         () => {
           queryClient.invalidateQueries({ queryKey: ['pontos'] });
-        }
+        },
       )
       .subscribe();
 

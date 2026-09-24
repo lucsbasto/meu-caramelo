@@ -35,7 +35,7 @@ export const statusColor: Record<PontoStatus, string> = {
 
 export function statusFromHoras(
   horas: number | null,
-  temMantenedor: boolean
+  temMantenedor: boolean,
 ): PontoStatus {
   if (!temMantenedor) return 'orfao';
   if (horas == null) return 'urgente';

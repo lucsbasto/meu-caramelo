@@ -1,20 +1,20 @@
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, spacing, radii, touch, fonts } from '@/theme';
-import { useAuth } from '@/features/auth/session';
+import { isGoogleConfigured, signInWithGoogle } from '@/features/auth/google';
 import { isValidEmail, sendMagicLink } from '@/features/auth/magic-link';
-import { signInWithGoogle, isGoogleConfigured } from '@/features/auth/google';
+import { useAuth } from '@/features/auth/session';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 
 const RESEND_SECONDS = 60;
 
@@ -81,7 +81,7 @@ export default function LoginScreen() {
       // Navegação acontece no efeito ao detectar a sessão.
     } catch (err) {
       setEmailError(
-        err instanceof Error ? err.message : 'Não deu para entrar com Google.'
+        err instanceof Error ? err.message : 'Não deu para entrar com Google.',
       );
     } finally {
       setGoogleLoading(false);
@@ -103,7 +103,7 @@ export default function LoginScreen() {
       setCooldown(RESEND_SECONDS);
     } catch (err) {
       setEmailError(
-        err instanceof Error ? err.message : 'Não deu para enviar o link.'
+        err instanceof Error ? err.message : 'Não deu para enviar o link.',
       );
     } finally {
       setSending(false);
@@ -118,7 +118,7 @@ export default function LoginScreen() {
       setCooldown(RESEND_SECONDS);
     } catch (err) {
       setEmailError(
-        err instanceof Error ? err.message : 'Não deu para reenviar o link.'
+        err instanceof Error ? err.message : 'Não deu para reenviar o link.',
       );
     } finally {
       setSending(false);
@@ -139,7 +139,9 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : dismissToMap())}
+            onPress={() =>
+              router.canGoBack() ? router.back() : dismissToMap()
+            }
             hitSlop={12}
             style={styles.backBtn}
           >

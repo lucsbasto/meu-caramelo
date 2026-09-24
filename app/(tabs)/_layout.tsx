@@ -5,7 +5,9 @@ import { colors } from '@/theme';
 // Ícones das tabs em emoji, no mesmo espírito do resto do app (🐾/👑/📍) — evita
 // depender de @expo/vector-icons e do carregamento de fonte de ícones.
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
-  return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.6 }}>{emoji}</Text>;
+  return (
+    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.6 }}>{emoji}</Text>
+  );
 }
 
 export default function TabsLayout() {

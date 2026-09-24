@@ -4,18 +4,9 @@
     "strict": true,
     "types": ["jest", "expo"],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "supabase/functions",
-    "worktrees"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "supabase/functions", "worktrees"]
 }

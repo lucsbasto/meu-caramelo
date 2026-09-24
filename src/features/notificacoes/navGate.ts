@@ -9,7 +9,7 @@ export type GatePush = {
   // descartado (já tratado / sem rota) ou segurado (ainda não pode navegar).
   aoTocar(
     response: Notifications.NotificationResponse | null,
-    podeNavegar: boolean
+    podeNavegar: boolean,
   ): string | null;
   // Chamado quando router+auth ficam prontos e logado. Devolve a rota segurada
   // a navegar, ou null se não há nada pendente.
@@ -30,7 +30,9 @@ export function criarGatePush(): GatePush {
       const id = response.notification.request.identifier;
       if (tratados.has(id)) return null;
       tratados.add(id);
-      const link = resolveNotificationLink(response.notification.request.content.data);
+      const link = resolveNotificationLink(
+        response.notification.request.content.data,
+      );
       if (!link) return null;
       if (podeNavegar) return link;
       pendente = link;

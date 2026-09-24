@@ -3,6 +3,8 @@
 // esta rota app/convite/[token].tsx resolvem o link automaticamente.
 // Sem sessão: parede de login com retorno para cá (não aceita sozinho). Com
 // sessão: chama a RPC de aceite uma vez e redireciona ao ponto.
+
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,13 +14,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-
-import { colors, fonts, radii, spacing, touch } from '@/theme';
-import { useAuth } from '@/features/auth/session';
 import { LoginWall } from '@/features/auth/LoginWall';
+import { useAuth } from '@/features/auth/session';
 import { mensagemAceite } from '@/features/ponto/convites';
 import { useAceitarConvite } from '@/features/ponto/useMantenedores';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 
 export default function ConviteRoute() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -43,7 +43,12 @@ export default function ConviteRoute() {
 
   // Token ausente na URL: convite quebrado.
   if (!token) {
-    return <MensagemErro texto="Este convite não é válido." onVoltar={() => router.replace('/')} />;
+    return (
+      <MensagemErro
+        texto="Este convite não é válido."
+        onVoltar={() => router.replace('/')}
+      />
+    );
   }
 
   if (loading) {
@@ -77,7 +82,13 @@ export default function ConviteRoute() {
   );
 }
 
-function MensagemErro({ texto, onVoltar }: { texto: string; onVoltar: () => void }) {
+function MensagemErro({
+  texto,
+  onVoltar,
+}: {
+  texto: string;
+  onVoltar: () => void;
+}) {
   return (
     <View style={styles.centro}>
       <View style={styles.card}>
@@ -86,7 +97,10 @@ function MensagemErro({ texto, onVoltar }: { texto: string; onVoltar: () => void
         <Pressable
           onPress={onVoltar}
           accessibilityRole="button"
-          style={({ pressed }) => [styles.botao, pressed && styles.botaoPressed]}
+          style={({ pressed }) => [
+            styles.botao,
+            pressed && styles.botaoPressed,
+          ]}
         >
           <Text style={styles.botaoTexto}>Voltar ao início</Text>
         </Pressable>

@@ -61,7 +61,10 @@ export const CAMPOS_ID_ROTA = ['ponto_id', 'pedido_id', 'registro_id'] as const;
 
 // Copia do payload apenas os ids de rota presentes, montando o `data` cru
 // `{ tipo, ...ids }` que viaja na mensagem push.
-export function dadosDeRota(tipo: string, payload: Payload): Record<string, string> {
+export function dadosDeRota(
+  tipo: string,
+  payload: Payload,
+): Record<string, string> {
   const dados: Record<string, string> = { tipo };
   for (const campo of CAMPOS_ID_ROTA) {
     const v = str(payload[campo]);
@@ -73,7 +76,7 @@ export function dadosDeRota(tipo: string, payload: Payload): Record<string, stri
 // Título e corpo exibidos no push. O payload pode sobrescrever com `titulo`/`corpo`.
 export function conteudoPara(
   tipo: string,
-  payload: Payload
+  payload: Payload,
 ): { titulo: string; corpo: string } {
   const override = {
     titulo: str(payload.titulo),

@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,26 +12,25 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
-import { useQuery } from '@tanstack/react-query';
-
-import { colors, fonts, radii, spacing, statusColor, touch } from '@/theme';
+import { setFoco } from '@/features/mapa/foco';
 import { CENTRO_PADRAO } from '@/features/mapa/MapaScreen';
-import { usePontos, type Centro } from '@/features/mapa/usePontos';
 import {
   distanciaMetros,
   formatarDistancia,
-  rotuloStatus,
   type Ponto,
+  rotuloStatus,
 } from '@/features/mapa/pontos';
-import { setFoco } from '@/features/mapa/foco';
+import { type Centro, usePontos } from '@/features/mapa/usePontos';
+import { colors, fonts, radii, spacing, statusColor, touch } from '@/theme';
 import { buscarEnderecos, type Endereco } from './geocode';
-import { useHistorico, type ItemHistorico } from './historico';
+import { type ItemHistorico, useHistorico } from './historico';
 
 // Ignora acentos e caixa na comparação (busca por "sao" acha "São").
 function normalizar(s: string): string {
-  return s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
 }
 
 // Tela /busca (§6.14): empilhada sobre o mapa, campo com foco automático.
@@ -53,11 +55,16 @@ export function BuscaScreen() {
       }
       try {
         const pos = await Promise.race([
-          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          }),
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
         ]);
         if (!vivo) return;
-        const c = pos && { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const c = pos && {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
         if (!c || (Math.abs(c.lat) < 1 && Math.abs(c.lng) < 1)) {
           setCentro(CENTRO_PADRAO);
           return;
@@ -90,11 +97,9 @@ export function BuscaScreen() {
       .filter(
         (p) =>
           normalizar(p.nome).includes(alvo) ||
-          (p.endereco != null && normalizar(p.endereco).includes(alvo))
+          (p.endereco != null && normalizar(p.endereco).includes(alvo)),
       )
-      .sort(
-        (a, b) => distanciaMetros(centro, a) - distanciaMetros(centro, b)
-      );
+      .sort((a, b) => distanciaMetros(centro, a) - distanciaMetros(centro, b));
   }, [pontos, centro, q]);
 
   // Endereços: geocoding do Mapbox. useQuery cancela requests obsoletos via
@@ -102,7 +107,8 @@ export function BuscaScreen() {
   const geocodeAtivo = debounced.length >= 2 && centro != null;
   const geocodeQuery = useQuery({
     queryKey: ['geocode', debounced, centro?.lat ?? 0, centro?.lng ?? 0],
-    queryFn: ({ signal }) => buscarEnderecos(debounced, centro as Centro, signal),
+    queryFn: ({ signal }) =>
+      buscarEnderecos(debounced, centro as Centro, signal),
     enabled: geocodeAtivo,
     staleTime: 1000 * 60 * 5,
   });
@@ -152,7 +158,7 @@ export function BuscaScreen() {
     setFoco(
       item.tipo === 'ponto'
         ? { lat: item.lat, lng: item.lng, pontoId: item.id }
-        : { lat: item.lat, lng: item.lng }
+        : { lat: item.lat, lng: item.lng },
     );
     router.back();
   }
@@ -217,7 +223,10 @@ export function BuscaScreen() {
                   key={`${item.tipo}:${item.id}`}
                   onPress={() => aplicarRecente(item)}
                   accessibilityRole="button"
-                  style={({ pressed }) => [styles.linha, pressed && styles.linhaPressed]}
+                  style={({ pressed }) => [
+                    styles.linha,
+                    pressed && styles.linhaPressed,
+                  ]}
                 >
                   <View style={styles.linhaTexto}>
                     <Text style={styles.linhaNome} numberOfLines={1}>
@@ -241,7 +250,10 @@ export function BuscaScreen() {
                     key={p.id}
                     onPress={() => aplicarPonto(p)}
                     accessibilityRole="button"
-                    style={({ pressed }) => [styles.linha, pressed && styles.linhaPressed]}
+                    style={({ pressed }) => [
+                      styles.linha,
+                      pressed && styles.linhaPressed,
+                    ]}
                   >
                     <View style={styles.linhaTexto}>
                       <Text style={styles.linhaNome} numberOfLines={1}>
@@ -251,8 +263,15 @@ export function BuscaScreen() {
                         {p.endereco ?? '—'}
                       </Text>
                       <View style={styles.selo}>
-                        <View style={[styles.seloDot, { backgroundColor: statusColor[p.status] }]} />
-                        <Text style={styles.seloTexto}>{rotuloStatus[p.status]}</Text>
+                        <View
+                          style={[
+                            styles.seloDot,
+                            { backgroundColor: statusColor[p.status] },
+                          ]}
+                        />
+                        <Text style={styles.seloTexto}>
+                          {rotuloStatus[p.status]}
+                        </Text>
                       </View>
                     </View>
                     {centro && (
@@ -273,7 +292,10 @@ export function BuscaScreen() {
                     key={e.id}
                     onPress={() => aplicarEndereco(e)}
                     accessibilityRole="button"
-                    style={({ pressed }) => [styles.linha, pressed && styles.linhaPressed]}
+                    style={({ pressed }) => [
+                      styles.linha,
+                      pressed && styles.linhaPressed,
+                    ]}
                   >
                     <View style={styles.linhaTexto}>
                       <Text style={styles.linhaNome} numberOfLines={1}>
@@ -288,12 +310,19 @@ export function BuscaScreen() {
               </>
             )}
 
-            {geocodeAtivo && geocodeQuery.isFetching && enderecos.length === 0 && (
-              <ActivityIndicator style={styles.carregando} color={colors.caramelo} />
-            )}
+            {geocodeAtivo &&
+              geocodeQuery.isFetching &&
+              enderecos.length === 0 && (
+                <ActivityIndicator
+                  style={styles.carregando}
+                  color={colors.caramelo}
+                />
+              )}
 
             {geocodeErro && enderecos.length === 0 && (
-              <Text style={styles.erroEndereco}>Não deu para buscar endereços agora.</Text>
+              <Text style={styles.erroEndereco}>
+                Não deu para buscar endereços agora.
+              </Text>
             )}
 
             {semResultado && (
@@ -304,7 +333,10 @@ export function BuscaScreen() {
                 <Pressable
                   onPress={onCadastrarAqui}
                   accessibilityRole="button"
-                  style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+                  style={({ pressed }) => [
+                    styles.cta,
+                    pressed && styles.ctaPressed,
+                  ]}
                 >
                   <Text style={styles.ctaTexto}>Cadastrar ponto aqui</Text>
                 </Pressable>
@@ -384,7 +416,11 @@ const styles = StyleSheet.create({
   linhaPressed: { backgroundColor: colors.surface },
   linhaTexto: { flex: 1, gap: 2 },
   linhaNome: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-  linhaSub: { fontFamily: fonts.body, fontSize: 13, color: colors.textTertiary },
+  linhaSub: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textTertiary,
+  },
   selo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -392,8 +428,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   seloDot: { width: 8, height: 8, borderRadius: 4 },
-  seloTexto: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
-  distancia: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
+  seloTexto: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  distancia: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   carregando: { marginTop: spacing.lg },
   erroEndereco: {
     fontFamily: fonts.body,

@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
-import { AppState } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
+import { AppState } from 'react-native';
 import type { Database } from './database.types';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -9,7 +9,7 @@ const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!url || !anonKey) {
   throw new Error(
-    'Faltam EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY no .env'
+    'Faltam EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY no .env',
   );
 }
 

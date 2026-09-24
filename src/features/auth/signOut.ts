@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase';
 import { removerTokenPush } from '@/features/notificacoes/push';
+import { supabase } from '@/lib/supabase';
 
 // Encerra a sessão. Remove o token deste dispositivo ANTES do signOut, porque a
 // RLS de device_tokens (user_id = auth.uid()) só permite apagar enquanto a

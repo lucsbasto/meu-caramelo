@@ -1,6 +1,9 @@
 // Pedido de ajuda — criação (§6.9). Folha inferior: "Quando" (Hoje · Amanhã ·
 // Escolher data), recado com sugestão, aviso de alcance e "Publicar pedido".
 // Bloqueia a duplicata por data mostrando o pedido já aberto (§6.9 Estados).
+
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,20 +16,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-
-import { colors, fonts, radii, spacing, touch } from '@/theme';
-import { supabase } from '@/lib/supabase';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
+import { supabase } from '@/lib/supabase';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import {
   AVISO_ALCANCE,
-  TEXTO_MAX,
-  TEXTO_SUGESTAO,
   dataAlvoISO,
   mensagemErroCriar,
-  validarPedido,
   type QuandoChip,
+  TEXTO_MAX,
+  TEXTO_SUGESTAO,
+  validarPedido,
 } from './pedidoAjuda';
 import { useCriarPedido, usePedidoAbertoExistente } from './usePedidoAjuda';
 
@@ -48,7 +48,10 @@ export function PedidoAjudaScreen({ id }: { id: string }) {
   // como se fosse real quando o usuário não editasse.
   const [texto, setTexto] = useState('');
 
-  const dataISO = useMemo(() => dataAlvoISO(chip, escolhida), [chip, escolhida]);
+  const dataISO = useMemo(
+    () => dataAlvoISO(chip, escolhida),
+    [chip, escolhida],
+  );
   const existente = usePedidoAbertoExistente(id, dataISO);
   const criar = useCriarPedido(id);
 
@@ -71,7 +74,12 @@ export function PedidoAjudaScreen({ id }: { id: string }) {
       Alert.alert('Falta um detalhe', validacao.erro);
       return;
     }
-    if (!requireAuth('Para pedir ajuda, entre na sua conta.', `/ponto/${id}/ajuda`)) {
+    if (
+      !requireAuth(
+        'Para pedir ajuda, entre na sua conta.',
+        `/ponto/${id}/ajuda`,
+      )
+    ) {
       return;
     }
     criar.mutate(
@@ -79,12 +87,15 @@ export function PedidoAjudaScreen({ id }: { id: string }) {
       {
         onSuccess: () => {
           router.back();
-          Alert.alert('Pedido publicado', 'Avisamos a vizinhança. Ele já está no topo do feed.');
+          Alert.alert(
+            'Pedido publicado',
+            'Avisamos a vizinhança. Ele já está no topo do feed.',
+          );
         },
         onError: (erro) => {
           Alert.alert('Não publicado', mensagemErroCriar(erro));
         },
-      }
+      },
     );
   }
 
@@ -99,7 +110,10 @@ export function PedidoAjudaScreen({ id }: { id: string }) {
   return (
     <SafeAreaView edges={['bottom']} style={styles.container}>
       <View style={styles.pega} />
-      <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.conteudo}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.titulo}>Pedir ajuda</Text>
         <Text style={styles.subtitulo}>{nome.data ?? 'Este ponto'}</Text>
 
@@ -119,7 +133,11 @@ export function PedidoAjudaScreen({ id }: { id: string }) {
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{rotulo}</Text>
+                <Text
+                  style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}
+                >
+                  {rotulo}
+                </Text>
               </Pressable>
             );
           })}
@@ -153,7 +171,10 @@ export function PedidoAjudaScreen({ id }: { id: string }) {
               onPress={onVerPedido}
               accessibilityRole="button"
               accessibilityLabel="Ver pedido"
-              style={({ pressed }) => [styles.botaoSecundario, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.botaoSecundario,
+                pressed && styles.pressed,
+              ]}
             >
               <Text style={styles.botaoSecundarioTexto}>Ver pedido</Text>
             </Pressable>
@@ -170,7 +191,8 @@ export function PedidoAjudaScreen({ id }: { id: string }) {
           accessibilityState={{ disabled: jaExiste || criar.isPending }}
           style={({ pressed }) => [
             styles.botaoPublicar,
-            (jaExiste || criar.isPending || existente.isLoading) && styles.botaoDesabilitado,
+            (jaExiste || criar.isPending || existente.isLoading) &&
+              styles.botaoDesabilitado,
             pressed && styles.botaoPublicarPressed,
           ]}
         >
@@ -213,7 +235,13 @@ function formatarData(d: Date): string {
 // Seletor de data sem dependência nativa: passos de ±1 dia a partir de hoje.
 // O "Escolher data" cobre os dias além de amanhã sem um date-picker nativo
 // (que exigiria rebuild do dev-client).
-function SeletorData({ data, onChange }: { data: Date; onChange: (d: Date) => void }) {
+function SeletorData({
+  data,
+  onChange,
+}: {
+  data: Date;
+  onChange: (d: Date) => void;
+}) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   const noPiso = data <= hoje;
@@ -232,7 +260,11 @@ function SeletorData({ data, onChange }: { data: Date; onChange: (d: Date) => vo
         disabled={noPiso}
         accessibilityRole="button"
         accessibilityLabel="Um dia antes"
-        style={({ pressed }) => [styles.setaData, noPiso && styles.setaDesabilitada, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.setaData,
+          noPiso && styles.setaDesabilitada,
+          pressed && styles.pressed,
+        ]}
       >
         <Text style={styles.setaTexto}>‹</Text>
       </Pressable>
@@ -259,10 +291,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginTop: spacing.sm,
   },
-  conteudo: { padding: spacing.xl, gap: spacing.sm, paddingBottom: spacing.xxl },
+  conteudo: {
+    padding: spacing.xl,
+    gap: spacing.sm,
+    paddingBottom: spacing.xxl,
+  },
 
   titulo: { fontFamily: fonts.title, fontSize: 24, color: colors.text },
-  subtitulo: { fontFamily: fonts.body, fontSize: 15, color: colors.textSecondary, marginBottom: spacing.md },
+  subtitulo: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
 
   rotulo: {
     fontFamily: fonts.body,
@@ -284,7 +325,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipAtivo: { backgroundColor: colors.caramelo, borderColor: colors.caramelo },
-  chipTexto: { fontFamily: fonts.body, fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  chipTexto: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
   chipTextoAtivo: { color: colors.onDark },
 
   seletorData: {
@@ -299,10 +345,20 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.bg,
   },
-  setaData: { width: touch.min, height: touch.min, alignItems: 'center', justifyContent: 'center' },
+  setaData: {
+    width: touch.min,
+    height: touch.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   setaDesabilitada: { opacity: 0.3 },
   setaTexto: { fontSize: 24, color: colors.text },
-  dataEscolhida: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.text },
+  dataEscolhida: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
 
   campo: {
     minHeight: 96,
@@ -316,7 +372,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlignVertical: 'top',
   },
-  contador: { alignSelf: 'flex-end', fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
+  contador: {
+    alignSelf: 'flex-end',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
 
   aviso: {
     fontFamily: fonts.body,
@@ -338,7 +399,12 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.alerta}11`,
     gap: spacing.sm,
   },
-  duplicataTexto: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.text },
+  duplicataTexto: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.text,
+  },
   botaoSecundario: {
     alignSelf: 'flex-start',
     minHeight: touch.min,
@@ -350,7 +416,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  botaoSecundarioTexto: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.text },
+  botaoSecundarioTexto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
 
   rodape: {
     padding: spacing.xl,
@@ -368,7 +439,12 @@ const styles = StyleSheet.create({
   },
   botaoPublicarPressed: { backgroundColor: colors.carameloPressed },
   botaoDesabilitado: { backgroundColor: colors.border },
-  botaoPublicarTexto: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.onDark },
+  botaoPublicarTexto: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.onDark,
+  },
 
   pressed: { opacity: 0.7 },
 });

@@ -1,6 +1,8 @@
 // Tela de mantenedores do ponto (§7.4 / §6.6): lista o principal e os
 // co-mantenedores, deixa o principal convidar por link e remover co, e
 // qualquer mantenedor sair (com promoção do co mais antigo ou órfão).
+
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -13,14 +15,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-
-import { colors, fonts, radii, spacing, touch } from '@/theme';
+import { abbreviateName } from '@/features/auth/abbreviate';
 import { useAuth } from '@/features/auth/session';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
-import { abbreviateName } from '@/features/auth/abbreviate';
-import { formatarDesde, type Mantenedor } from './dados';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import { linkConvite, mensagemSaida } from './convites';
+import { formatarDesde, type Mantenedor } from './dados';
 import {
   useCriarConvite,
   useMantenedores,
@@ -52,7 +52,10 @@ export function MantenedoresScreen({ id }: Props) {
 
   function onConvidar() {
     if (
-      !requireAuth('Entre para convidar quem cuida deste ponto com você.', rotaRetorno)
+      !requireAuth(
+        'Entre para convidar quem cuida deste ponto com você.',
+        rotaRetorno,
+      )
     ) {
       return;
     }
@@ -88,7 +91,7 @@ export function MantenedoresScreen({ id }: Props) {
                 Alert.alert('Não deu para remover', 'Tente de novo.'),
             }),
         },
-      ]
+      ],
     );
   }
 
@@ -113,18 +116,22 @@ export function MantenedoresScreen({ id }: Props) {
                   const novo = cos[0];
                   Alert.alert(
                     'Você saiu',
-                    `${novo ? abbreviateName(novo.nome) : 'Outra pessoa'} agora mantém o ponto.`
+                    `${novo ? abbreviateName(novo.nome) : 'Outra pessoa'} agora mantém o ponto.`,
                   );
                 } else if (resultado === 'orfao') {
-                  Alert.alert('Você saiu', 'O ponto ficou órfão até alguém adotar.');
+                  Alert.alert(
+                    'Você saiu',
+                    'O ponto ficou órfão até alguém adotar.',
+                  );
                 } else {
                   Alert.alert('Você saiu', 'Você não mantém mais este ponto.');
                 }
               },
-              onError: (erro) => Alert.alert('Não deu para sair', mensagemSaida(erro)),
+              onError: (erro) =>
+                Alert.alert('Não deu para sair', mensagemSaida(erro)),
             }),
         },
-      ]
+      ],
     );
   }
 
@@ -141,10 +148,11 @@ export function MantenedoresScreen({ id }: Props) {
           onPress: () =>
             sair.mutate(undefined, {
               onSuccess: () => router.replace(`/ponto/${id}`),
-              onError: (erro) => Alert.alert('Não deu para sair', mensagemSaida(erro)),
+              onError: (erro) =>
+                Alert.alert('Não deu para sair', mensagemSaida(erro)),
             }),
         },
-      ]
+      ],
     );
   }
 
@@ -157,7 +165,10 @@ export function MantenedoresScreen({ id }: Props) {
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Voltar"
-            style={({ pressed }) => [styles.botaoVoltar, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.botaoVoltar,
+              pressed && styles.pressed,
+            ]}
           >
             <Text style={styles.iconeVoltar}>‹</Text>
           </Pressable>
@@ -172,7 +183,9 @@ export function MantenedoresScreen({ id }: Props) {
         </View>
       ) : mantenedores.isError ? (
         <View style={styles.centro}>
-          <Text style={styles.erroTexto}>Não deu para carregar os mantenedores.</Text>
+          <Text style={styles.erroTexto}>
+            Não deu para carregar os mantenedores.
+          </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.conteudo}>
@@ -183,7 +196,9 @@ export function MantenedoresScreen({ id }: Props) {
               principal
             />
           ) : (
-            <Text style={styles.vazio}>Este ponto está órfão — ninguém o mantém agora.</Text>
+            <Text style={styles.vazio}>
+              Este ponto está órfão — ninguém o mantém agora.
+            </Text>
           )}
 
           {cos.length > 0 && (
@@ -215,20 +230,26 @@ export function MantenedoresScreen({ id }: Props) {
               {criarConvite.isPending ? (
                 <ActivityIndicator color={colors.onDark} />
               ) : (
-                <Text style={styles.botaoPrimarioTexto}>Convidar co-mantenedor</Text>
+                <Text style={styles.botaoPrimarioTexto}>
+                  Convidar co-mantenedor
+                </Text>
               )}
             </Pressable>
           )}
 
           {souPrincipal && (
             <Text style={styles.dica}>
-              O convite é um link de uso único, válido por 7 dias. Quem tocar nele e
-              estiver logado vira co-mantenedor na hora.
+              O convite é um link de uso único, válido por 7 dias. Quem tocar
+              nele e estiver logado vira co-mantenedor na hora.
             </Text>
           )}
 
           {souPrincipal ? (
-            <Pressable onPress={onSairPrincipal} hitSlop={8} style={styles.acaoSair}>
+            <Pressable
+              onPress={onSairPrincipal}
+              hitSlop={8}
+              style={styles.acaoSair}
+            >
               <Text style={styles.acaoSairTexto}>Sair de mantenedor</Text>
             </Pressable>
           ) : souCo ? (
@@ -269,7 +290,9 @@ function LinhaMantenedor({
           {principal ? 'MANTENEDOR PRINCIPAL' : 'CO-MANTENEDOR'}
         </Text>
         <Text style={styles.linhaNome}>{nome}</Text>
-        <Text style={styles.linhaDesde}>{formatarDesde(mantenedor.criadoEm)}</Text>
+        <Text style={styles.linhaDesde}>
+          {formatarDesde(mantenedor.criadoEm)}
+        </Text>
       </View>
 
       {onRemover && (
@@ -328,7 +351,11 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.6 },
   iconeVoltar: { fontSize: 28, color: colors.text, fontFamily: fonts.body },
-  tituloCabecalho: { fontFamily: fonts.title, fontSize: 18, color: colors.text },
+  tituloCabecalho: {
+    fontFamily: fonts.title,
+    fontSize: 18,
+    color: colors.text,
+  },
 
   centro: {
     flex: 1,
@@ -376,7 +403,11 @@ const styles = StyleSheet.create({
     color: colors.textWeak,
   },
   linhaNome: { fontFamily: fonts.title, fontSize: 16, color: colors.text },
-  linhaDesde: { fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
+  linhaDesde: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
   remover: {
     fontFamily: fonts.body,
     fontSize: 14,

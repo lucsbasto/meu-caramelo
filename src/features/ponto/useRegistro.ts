@@ -1,19 +1,19 @@
 // Registro de alimentação (§6.7): mutation online com queda para fila offline,
 // hook de flush global e a mensagem de sucesso H2. As regras de quem pode
 // registrar vivem na RLS; aqui só oferecemos a ação a quem está autenticado.
+
+import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
-import { useMutation } from '@tanstack/react-query';
-
-import { supabase } from '@/lib/supabase';
 import { abbreviateName } from '@/features/auth/abbreviate';
+import { supabase } from '@/lib/supabase';
 import {
+  type DadosRegistro,
   enfileirar,
   enviarRegistro,
   flushFila,
   invalidarRegistro,
   lerFila,
-  type DadosRegistro,
 } from './filaOffline';
 import { gerarIdRegistro } from './registro';
 
@@ -33,7 +33,11 @@ export type ResultadoRegistro = { modo: 'online' | 'offline' };
 export function useRegistrarAlimentacao(pontoId: string) {
   return useMutation<ResultadoRegistro, Error, EntradaRegistro>({
     mutationFn: async (entrada) => {
-      const dados: DadosRegistro = { ...entrada, pontoId, id: gerarIdRegistro() };
+      const dados: DadosRegistro = {
+        ...entrada,
+        pontoId,
+        id: gerarIdRegistro(),
+      };
       try {
         await enviarRegistro(dados);
         return { modo: 'online' };
@@ -106,7 +110,7 @@ export function useFlushFilaOffline(): void {
 // ---------------------------------------------------------------------------
 export async function buscarMensagemH2(
   pontoId: string,
-  meuUserId: string
+  meuUserId: string,
 ): Promise<string> {
   const inicioDia = new Date();
   inicioDia.setHours(0, 0, 0, 0);
@@ -124,7 +128,9 @@ export async function buscarMensagemH2(
 
   const ultimo = deOutros[0];
   // Só o primeiro nome (§7.6): abbreviateName já reduz o sobrenome à inicial.
-  const primeiroNome = abbreviateName(ultimo.profiles?.nome ?? 'Vizinho').split(' ')[0];
+  const primeiroNome = abbreviateName(ultimo.profiles?.nome ?? 'Vizinho').split(
+    ' ',
+  )[0];
   const hora = new Date(ultimo.criado_em).getHours();
   return `${primeiroNome} passou às ${hora}h — bom reforço`;
 }

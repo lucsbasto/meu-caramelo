@@ -30,7 +30,7 @@ function inteiroNaoNegativo(valor: unknown): number | null {
 // - algum dos três campos falta ou não é um inteiro >= 0;
 // - os três são zero (dia do lançamento — esconder em vez de mostrar zeros).
 export function normalizarEstatisticas(
-  payload: unknown
+  payload: unknown,
 ): EstatisticasCidade | null {
   const linha = primeiraLinha(payload);
   if (!linha) return null;

@@ -3,6 +3,9 @@
 // useAuth para o user_id e para uma parede de segurança. Regra central: ao
 // menos um tipo é obrigatório; todo o resto é opcional. O registro nunca se
 // perde — sem rede, cai na fila offline e sobe sozinho depois.
+
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,26 +19,26 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-
-import { colors, fonts, radii, spacing, touch } from '@/theme';
-import { useAuth } from '@/features/auth/session';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { LoginWall } from '@/features/auth/LoginWall';
+import { useAuth } from '@/features/auth/session';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import { ROTULOS_TIPO } from './dados';
 import {
+  contagemParaInsert,
+  exigeQuantidade,
   OBSERVACAO_MAX,
   PASSO_KG,
   TIPOS_ITEM,
-  contagemParaInsert,
-  exigeQuantidade,
   type TipoItem,
 } from './registro';
 import {
   buscarMensagemH2,
-  useRegistrarAlimentacao,
   type EntradaRegistro,
+  useRegistrarAlimentacao,
 } from './useRegistro';
 
 type Props = { id: string };
@@ -117,7 +120,10 @@ function FormRegistro({ id, usuarioId }: { id: string; usuarioId: string }) {
   async function escolherDaGaleria() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permissão necessária', 'Libere as fotos para escolher uma imagem.');
+      Alert.alert(
+        'Permissão necessária',
+        'Libere as fotos para escolher uma imagem.',
+      );
       return;
     }
     const r = await ImagePicker.launchImageLibraryAsync({
@@ -132,7 +138,13 @@ function FormRegistro({ id, usuarioId }: { id: string; usuarioId: string }) {
       { text: 'Câmera', onPress: () => void escolherDaCamera() },
       { text: 'Galeria', onPress: () => void escolherDaGaleria() },
       ...(fotoLocal
-        ? [{ text: 'Remover', style: 'destructive' as const, onPress: () => setFotoLocal(null) }]
+        ? [
+            {
+              text: 'Remover',
+              style: 'destructive' as const,
+              onPress: () => setFotoLocal(null),
+            },
+          ]
         : []),
       { text: 'Cancelar', style: 'cancel' as const },
     ]);
@@ -183,7 +195,7 @@ function FormRegistro({ id, usuarioId }: { id: string; usuarioId: string }) {
       const msg = (err as { message?: unknown })?.message;
       Alert.alert(
         'Não deu para salvar',
-        typeof msg === 'string' && msg ? msg : 'Tente de novo.'
+        typeof msg === 'string' && msg ? msg : 'Tente de novo.',
       );
     }
   }
@@ -199,7 +211,9 @@ function FormRegistro({ id, usuarioId }: { id: string; usuarioId: string }) {
             accessibilityRole="button"
             accessibilityLabel="Voltar"
           >
-            <Text style={[styles.voltar, salvando && styles.desabilitadoTexto]}>‹ Voltar</Text>
+            <Text style={[styles.voltar, salvando && styles.desabilitadoTexto]}>
+              ‹ Voltar
+            </Text>
           </Pressable>
           <Text style={styles.tituloCabecalho}>Registrar</Text>
           <View style={styles.espacoCabecalho} />
@@ -228,7 +242,9 @@ function FormRegistro({ id, usuarioId }: { id: string; usuarioId: string }) {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>
+                  <Text
+                    style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}
+                  >
                     {ROTULOS_TIPO[tipo]}
                   </Text>
                 </Pressable>
@@ -244,7 +260,9 @@ function FormRegistro({ id, usuarioId }: { id: string; usuarioId: string }) {
             <Stepper
               valor={quantidadeKg}
               texto={`${quantidadeKg.toFixed(1).replace('.', ',')} kg`}
-              aoDiminuir={() => setQuantidadeKg((v) => Math.max(0, v - PASSO_KG))}
+              aoDiminuir={() =>
+                setQuantidadeKg((v) => Math.max(0, v - PASSO_KG))
+              }
               aoAumentar={() => setQuantidadeKg((v) => v + PASSO_KG)}
             />
           </View>
@@ -307,7 +325,9 @@ function FormRegistro({ id, usuarioId }: { id: string; usuarioId: string }) {
       </ScrollView>
 
       {/* Botão salvar primário, estilo do detalhe (§6.7). */}
-      <View style={[styles.rodape, { paddingBottom: insets.bottom + spacing.md }]}>
+      <View
+        style={[styles.rodape, { paddingBottom: insets.bottom + spacing.md }]}
+      >
         <Pressable
           onPress={onSalvar}
           disabled={!podeSalvar}
@@ -366,7 +386,10 @@ function Stepper({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Aumentar"
-          style={({ pressed }) => [styles.stepperBotao, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.stepperBotao,
+            pressed && styles.pressed,
+          ]}
         >
           <Text style={styles.stepperSinal}>＋</Text>
         </Pressable>
@@ -396,7 +419,11 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   voltar: { fontFamily: fonts.body, fontSize: 16, color: colors.caramelo },
-  tituloCabecalho: { fontFamily: fonts.title, fontSize: 18, color: colors.text },
+  tituloCabecalho: {
+    fontFamily: fonts.title,
+    fontSize: 18,
+    color: colors.text,
+  },
   espacoCabecalho: { width: 54 },
   desabilitadoTexto: { color: colors.textWeak },
 
@@ -416,13 +443,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipAtivo: { backgroundColor: colors.caramelo, borderColor: colors.caramelo },
-  chipTexto: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
+  chipTexto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
   chipTextoAtivo: { color: colors.onDark, fontWeight: '600' },
 
   contadores: { flexDirection: 'row', gap: spacing.md },
 
   stepper: { flex: 1, gap: spacing.xs },
-  stepperEtiqueta: { fontFamily: fonts.body, fontSize: 13, color: colors.textTertiary },
+  stepperEtiqueta: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textTertiary,
+  },
   stepperControles: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -440,7 +475,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepperSinal: { fontFamily: fonts.body, fontSize: 22, color: colors.caramelo },
+  stepperSinal: {
+    fontFamily: fonts.body,
+    fontSize: 22,
+    color: colors.caramelo,
+  },
   stepperValor: { fontFamily: fonts.title, fontSize: 18, color: colors.text },
 
   foto: {
@@ -500,5 +539,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   salvarBtnPressed: { backgroundColor: colors.carameloPressed },
-  salvarBtnTexto: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.onDark },
+  salvarBtnTexto: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.onDark,
+  },
 });

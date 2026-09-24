@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useRouter, useRootNavigationState } from 'expo-router';
 import * as Notifications from 'expo-notifications';
+import { useRootNavigationState, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth/session';
-import { registrarTokenPush } from './push';
 import { criarGatePush } from './navGate';
+import { registrarTokenPush } from './push';
 import { useToast } from './Toast';
 
 // Handler de foreground (T8 #46): com o app aberto NÃO mostramos banner do SO —

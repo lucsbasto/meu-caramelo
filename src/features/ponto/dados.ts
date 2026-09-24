@@ -1,9 +1,11 @@
 // Tipos + normalização + formatadores puros do detalhe do ponto (§6.4).
-import type { Database, Tables } from '@/lib/database.types';
-import { arredondarCoord, formatarTempo } from '@/features/mapa/pontos';
-import { statusFromHoras, type PontoStatus } from '@/theme';
 
-export type PontoDetalheRow = Database['public']['Views']['pontos_com_status']['Row'];
+import { arredondarCoord, formatarTempo } from '@/features/mapa/pontos';
+import type { Database, Tables } from '@/lib/database.types';
+import { type PontoStatus, statusFromHoras } from '@/theme';
+
+export type PontoDetalheRow =
+  Database['public']['Views']['pontos_com_status']['Row'];
 
 export type PontoDetalhe = {
   id: string;
@@ -18,7 +20,9 @@ export type PontoDetalhe = {
   status: PontoStatus;
 };
 
-export function normalizarPontoDetalhe(row: PontoDetalheRow): PontoDetalhe | null {
+export function normalizarPontoDetalhe(
+  row: PontoDetalheRow,
+): PontoDetalhe | null {
   if (row.id == null || row.lat == null || row.lng == null) return null;
   const temMantenedor = row.mantenedor_id != null;
   return {
@@ -80,8 +84,18 @@ export function formatarTempoRegistro(criadoEm: string): string {
 }
 
 const MESES = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
 ];
 
 // Desde quando o mantenedor cuida do ponto (§6.4).
@@ -120,7 +134,7 @@ export function formatarConteudoRegistro(r: {
 export function podeRemoverRegistro(
   registro: { userId: string },
   usuarioId: string | null,
-  mantenedores: Mantenedor[]
+  mantenedores: Mantenedor[],
 ): boolean {
   if (!usuarioId) return false;
   if (registro.userId === usuarioId) return true;

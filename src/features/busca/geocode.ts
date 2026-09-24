@@ -26,7 +26,7 @@ type MapboxFeature = {
 export async function buscarEnderecos(
   query: string,
   centro: Centro,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<Endereco[]> {
   const q = query.trim();
   // <2 chars ou sem token não vale bater na rede.

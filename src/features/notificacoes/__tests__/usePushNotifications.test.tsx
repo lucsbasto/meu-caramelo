@@ -1,5 +1,5 @@
-import { describe, it, expect, jest } from '@jest/globals';
-import { renderHook, act } from '@testing-library/react-native';
+import { describe, expect, it, jest } from '@jest/globals';
+import { act, renderHook } from '@testing-library/react-native';
 
 // Smoke de fiação do hook (T8 #46): a lógica de gate/dedupe/flush é coberta,
 // pura, em navGate.test.ts. Aqui só verificamos que o hook liga os listeners do
@@ -37,10 +37,12 @@ jest.mock('../push', () => ({
 jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),
   addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })),
-  addNotificationResponseReceivedListener: jest.fn((cb: (r: unknown) => void) => {
-    mockResponseCb = cb;
-    return { remove: jest.fn() };
-  }),
+  addNotificationResponseReceivedListener: jest.fn(
+    (cb: (r: unknown) => void) => {
+      mockResponseCb = cb;
+      return { remove: jest.fn() };
+    },
+  ),
   addNotificationReceivedListener: jest.fn((cb: (n: unknown) => void) => {
     mockReceivedCb = cb;
     return { remove: jest.fn() };
@@ -67,7 +69,10 @@ describe('usePushNotifications — fiação dos listeners', () => {
     act(() => {
       mockResponseCb?.({
         notification: {
-          request: { identifier: 'n1', content: { data: { tipo: 'pedido_ajuda', pedido_id: 'pd1' } } },
+          request: {
+            identifier: 'n1',
+            content: { data: { tipo: 'pedido_ajuda', pedido_id: 'pd1' } },
+          },
         },
       });
     });
@@ -75,7 +80,9 @@ describe('usePushNotifications — fiação dos listeners', () => {
 
     // Foreground: mostra toast in-app, sem navegar de novo.
     act(() => {
-      mockReceivedCb?.({ request: { content: { title: 'Novo pedido', body: 'perto de você' } } });
+      mockReceivedCb?.({
+        request: { content: { title: 'Novo pedido', body: 'perto de você' } },
+      });
     });
     expect(mockShowToast).toHaveBeenCalledWith('Novo pedido');
     expect(mockPush).toHaveBeenCalledTimes(1);

@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import { decidirRotaInicial } from '../primeiraAbertura';
 
 describe('decidirRotaInicial', () => {
@@ -8,14 +8,14 @@ describe('decidirRotaInicial', () => {
         sessaoCarregando: true,
         temSessao: true,
         onboardingVisto: null,
-      })
+      }),
     ).toBe('app');
     expect(
       decidirRotaInicial({
         sessaoCarregando: false,
         temSessao: true,
         onboardingVisto: false,
-      })
+      }),
     ).toBe('app');
   });
 
@@ -25,14 +25,14 @@ describe('decidirRotaInicial', () => {
         sessaoCarregando: true,
         temSessao: false,
         onboardingVisto: false,
-      })
+      }),
     ).toBeNull();
     expect(
       decidirRotaInicial({
         sessaoCarregando: false,
         temSessao: false,
         onboardingVisto: null,
-      })
+      }),
     ).toBeNull();
   });
 
@@ -42,7 +42,7 @@ describe('decidirRotaInicial', () => {
         sessaoCarregando: false,
         temSessao: false,
         onboardingVisto: false,
-      })
+      }),
     ).toBe('onboarding');
   });
 
@@ -52,7 +52,7 @@ describe('decidirRotaInicial', () => {
         sessaoCarregando: false,
         temSessao: false,
         onboardingVisto: true,
-      })
+      }),
     ).toBe('app');
   });
 });

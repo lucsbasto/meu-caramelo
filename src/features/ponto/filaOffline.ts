@@ -3,12 +3,12 @@
 // expo-secure-store e sobem sozinhos quando a conexão volta (flush no
 // foreground + retry com backoff). Guardamos só a URI local da foto (file://),
 // nunca base64, por causa do limite ~2 KB do SecureStore no Android.
-import * as SecureStore from 'expo-secure-store';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
-import { supabase } from '@/lib/supabase';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import * as SecureStore from 'expo-secure-store';
 import type { TablesInsert } from '@/lib/database.types';
 import { queryClient } from '@/lib/query';
+import { supabase } from '@/lib/supabase';
 import { BUCKET_FOTOS } from './editor';
 import type { TipoItem } from './registro';
 
@@ -56,7 +56,9 @@ export function invalidarRegistro(pontoId: string): void {
   queryClient.invalidateQueries({ queryKey: ['pontos'] });
   queryClient.invalidateQueries({ queryKey: ['ponto', pontoId] });
   queryClient.invalidateQueries({ queryKey: ['ponto', pontoId, 'registros'] });
-  queryClient.invalidateQueries({ queryKey: ['ponto', pontoId, 'estatisticas'] });
+  queryClient.invalidateQueries({
+    queryKey: ['ponto', pontoId, 'estatisticas'],
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +67,7 @@ export function invalidarRegistro(pontoId: string): void {
 // ---------------------------------------------------------------------------
 export async function subirFotoRegistro(
   registroId: string,
-  localUri: string
+  localUri: string,
 ): Promise<string> {
   const contexto = ImageManipulator.manipulate(localUri);
   contexto.resize({ width: 1600 });
@@ -117,7 +119,10 @@ export async function enviarRegistro(dados: DadosRegistro): Promise<void> {
   if (dados.fotoLocalUri) {
     try {
       const url = await subirFotoRegistro(dados.id, dados.fotoLocalUri);
-      await supabase.from('registros').update({ foto_url: url }).eq('id', dados.id);
+      await supabase
+        .from('registros')
+        .update({ foto_url: url })
+        .eq('id', dados.id);
     } catch {
       // Registro já salvo: seguir sem foto (§6.7).
     }
@@ -173,7 +178,7 @@ async function incrementarTentativas(localId: string): Promise<void> {
   try {
     const fila = await lerFila();
     const nova = fila.map((r) =>
-      r.localId === localId ? { ...r, tentativas: (r.tentativas ?? 0) + 1 } : r
+      r.localId === localId ? { ...r, tentativas: (r.tentativas ?? 0) + 1 } : r,
     );
     await gravarFila(nova);
   } catch {
@@ -213,7 +218,9 @@ export async function flushFila(): Promise<void> {
     }
 
     // Se algo subiu, atualiza mapa e detalhes dos pontos afetados.
-    pontosAfetados.forEach((pontoId) => invalidarRegistro(pontoId));
+    pontosAfetados.forEach((pontoId) => {
+      invalidarRegistro(pontoId);
+    });
   } finally {
     flushando = false;
   }

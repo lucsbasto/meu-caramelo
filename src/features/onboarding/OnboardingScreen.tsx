@@ -1,23 +1,24 @@
 // Onboarding (§6.1): uma tela de primeira execução, sem carrossel. Explica o app
 // em cinco segundos e sai da frente. Não rola; sem botão "pular" nem "ver o mapa
 // sem entrar" — a entrada como visitante mora na tela de login (§6.2/§7.1).
-import { useCallback } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
-import { colors, spacing, radii, touch, fonts } from '@/theme';
-import { IlustracaoOnboarding } from './IlustracaoOnboarding';
-import { useEstatisticasCidade } from './useEstatisticasCidade';
+import { useCallback } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import { rotulosEstatisticas } from './estatisticas';
+import { IlustracaoOnboarding } from './IlustracaoOnboarding';
 import { marcarOnboardingVisto } from './primeiraAbertura';
+import { useEstatisticasCidade } from './useEstatisticasCidade';
 
 const TERMOS_URL = 'https://meucaramelo.app/termos';
 const PRIVACIDADE_URL = 'https://meucaramelo.app/privacidade';
@@ -34,7 +35,7 @@ export default function OnboardingScreen() {
       void marcarOnboardingVisto();
       router.push({ pathname: '/login', params: { mode: modo } });
     },
-    [router]
+    [router],
   );
 
   function abrirLink(url: string) {
@@ -84,7 +85,9 @@ export default function OnboardingScreen() {
                 <View key={chave} style={styles.numeroItem}>
                   {i > 0 && <View style={styles.divisoria} />}
                   <View style={styles.numeroBloco}>
-                    <Text style={styles.numeroValor}>{estatisticas[chave]}</Text>
+                    <Text style={styles.numeroValor}>
+                      {estatisticas[chave]}
+                    </Text>
                     <Text style={styles.numeroRotulo}>{rotulo}</Text>
                   </View>
                 </View>
@@ -116,7 +119,10 @@ export default function OnboardingScreen() {
 
           <Text style={styles.legal}>
             Ao continuar, você aceita os{' '}
-            <Text style={styles.legalLink} onPress={() => abrirLink(TERMOS_URL)}>
+            <Text
+              style={styles.legalLink}
+              onPress={() => abrirLink(TERMOS_URL)}
+            >
               Termos
             </Text>{' '}
             e a{' '}
