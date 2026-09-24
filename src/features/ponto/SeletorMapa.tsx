@@ -1,11 +1,11 @@
 // Mapa com pin fixo ao centro (§6.6). O usuário arrasta o mapa por baixo do
 // pin; ao parar (onMapIdle), a coordenada do centro vira a posição escolhida.
 // Usado no mini-mapa de 180 px e na versão em tela cheia ("Ajustar no mapa").
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Mapbox, { Camera, MapView } from '@rnmapbox/maps';
 
-import { colors } from '@/theme';
+import Mapbox, { Camera, MapView } from '@rnmapbox/maps';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import estiloCaramelo from '@/features/mapa/estilo-caramelo.json';
+import { colors } from '@/theme';
 import type { Coord } from './editor';
 
 // Garante o token mesmo quando o editor é aberto sem passar pelo MapaScreen.

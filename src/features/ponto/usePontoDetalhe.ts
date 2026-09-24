@@ -1,18 +1,24 @@
 // Queries do detalhe do ponto (§6.4) + realtime: INSERT/DELETE em `registros`
 // filtrado por ponto_id invalida as três listas que dependem dele.
-import { useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import type { TablesInsert } from '@/lib/database.types';
-import { PAPEL_PRINCIPAL } from './editor';
+
 import {
-  normalizarPontoDetalhe,
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useEffect } from 'react';
+import type { TablesInsert } from '@/lib/database.types';
+import { supabase } from '@/lib/supabase';
+import {
   type EstatisticasMes,
   type Mantenedor,
+  normalizarPontoDetalhe,
   type PontoDetalhe,
   type PontoFoto,
   type RegistroPonto,
 } from './dados';
+import { PAPEL_PRINCIPAL } from './editor';
 
 const QTD_REGISTROS_TELA = 3;
 
@@ -49,14 +55,17 @@ type FotoRow = { id: string; url: string; ordem: number | null };
 const dbFotos = supabase as unknown as {
   from: (t: 'ponto_fotos') => {
     select: (cols: string) => {
-      eq: (col: string, val: string) => {
+      eq: (
+        col: string,
+        val: string,
+      ) => {
         order: (
           col: string,
-          o: { ascending: boolean }
+          o: { ascending: boolean },
         ) => {
           order: (
             col: string,
-            o: { ascending: boolean }
+            o: { ascending: boolean },
           ) => Promise<{ data: FotoRow[] | null; error: unknown }>;
         };
       };
@@ -99,7 +108,7 @@ async function buscarRegistros(id: string): Promise<RegistroPonto[]> {
   const { data, error } = await supabase
     .from('registros')
     .select(
-      'id, user_id, criado_em, caes, gatos, quantidade_kg, observacao, tipos, profiles(nome, avatar_url)'
+      'id, user_id, criado_em, caes, gatos, quantidade_kg, observacao, tipos, profiles(nome, avatar_url)',
     )
     .eq('ponto_id', id)
     .order('criado_em', { ascending: false })
@@ -172,7 +181,9 @@ export function usePontoDetalhe(id: string | undefined) {
 
     function invalidarTudo() {
       queryClient.invalidateQueries({ queryKey: chaveRegistros(id as string) });
-      queryClient.invalidateQueries({ queryKey: chaveEstatisticas(id as string) });
+      queryClient.invalidateQueries({
+        queryKey: chaveEstatisticas(id as string),
+      });
       // horas_desde_ultima (status/estatística de tempo) depende do último registro
       queryClient.invalidateQueries({ queryKey: chavePonto(id as string) });
     }
@@ -187,7 +198,7 @@ export function usePontoDetalhe(id: string | undefined) {
           table: 'registros',
           filter: `ponto_id=eq.${id}`,
         },
-        invalidarTudo
+        invalidarTudo,
       )
       .on(
         'postgres_changes',
@@ -197,7 +208,7 @@ export function usePontoDetalhe(id: string | undefined) {
           table: 'registros',
           filter: `ponto_id=eq.${id}`,
         },
-        invalidarTudo
+        invalidarTudo,
       )
       .subscribe();
 

@@ -1,8 +1,3 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
-import * as Location from 'expo-location';
 import Mapbox, {
   Camera,
   CircleLayer,
@@ -10,20 +5,35 @@ import Mapbox, {
   ShapeSource,
   UserLocation,
 } from '@rnmapbox/maps';
+import * as Location from 'expo-location';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { colors, fonts, radii, spacing, touch } from '@/theme';
 import estiloCaramelo from './estilo-caramelo.json';
 import { FiltroChips } from './FiltroChips';
-import { PontoSheet } from './PontoSheet';
-import { usePontos, type Centro } from './usePontos';
 import { consumirFoco } from './foco';
+import { PontoSheet } from './PontoSheet';
 import {
   aplicarFiltro,
   distanciaMetros,
-  toFeatureCollection,
   type Filtro,
   type Ponto,
+  toFeatureCollection,
 } from './pontos';
+import { type Centro, usePontos } from './usePontos';
 
 // Token público (pk.) — research #3. Sem download token de vetor: estilo é raster.
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? null);
@@ -61,11 +71,16 @@ export default function MapaScreen() {
         // (emulador, GPS frio): sem um teto, o mapa nunca ganha centro. Corremos
         // contra um timeout para garantir que o fallback (Palmas) sempre entre.
         const pos = await Promise.race([
-          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          }),
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
         ]);
         if (!vivo) return;
-        const c = pos && { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const c = pos && {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
         // Sem posição (timeout) ou coordenada inválida perto de (0,0) — que jogaria
         // o mapa no oceano — cai no fallback em vez de deixar o mapa sem centro.
         if (!c || (Math.abs(c.lat) < 1 && Math.abs(c.lng) < 1)) {
@@ -87,7 +102,7 @@ export default function MapaScreen() {
 
   const visiveis = useMemo(
     () => aplicarFiltro(pontos, filtro),
-    [pontos, filtro]
+    [pontos, filtro],
   );
   const fc = useMemo(() => toFeatureCollection(visiveis), [visiveis]);
 
@@ -114,7 +129,7 @@ export default function MapaScreen() {
       } else {
         setSelecionado(null);
       }
-    }, [])
+    }, []),
   );
 
   // Quando o ponto pedido pela busca aparece na lista do novo centro, seleciona
@@ -158,7 +173,7 @@ export default function MapaScreen() {
     if (pontos.length === 0 || !origem) {
       Alert.alert(
         'Sem ponto por perto',
-        'Não encontramos um ponto próximo agora. Toque em um pin no mapa para registrar.'
+        'Não encontramos um ponto próximo agora. Toque em um pin no mapa para registrar.',
       );
       return;
     }
@@ -223,7 +238,11 @@ export default function MapaScreen() {
         </ShapeSource>
       </MapView>
 
-      <SafeAreaView edges={['top']} style={styles.overlayTopo} pointerEvents="box-none">
+      <SafeAreaView
+        edges={['top']}
+        style={styles.overlayTopo}
+        pointerEvents="box-none"
+      >
         <Pressable
           onPress={() => router.push('/busca')}
           accessibilityRole="button"
@@ -253,7 +272,10 @@ export default function MapaScreen() {
           <Text style={styles.avisoTexto}>Nenhum ponto por aqui ainda.</Text>
           <Pressable
             onPress={onCadastrarPrimeiro}
-            style={({ pressed }) => [styles.ctaVazio, pressed && styles.ctaVazioPressed]}
+            style={({ pressed }) => [
+              styles.ctaVazio,
+              pressed && styles.ctaVazioPressed,
+            ]}
             accessibilityRole="button"
           >
             <Text style={styles.ctaVazioTexto}>Cadastrar o primeiro ponto</Text>

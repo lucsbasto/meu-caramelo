@@ -1,13 +1,13 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import {
-  dadosDeRota,
   conteudoPara,
-  podeEnviar,
-  horaLocal,
+  dadosDeRota,
   dataLocal,
   dividirEmLotes,
+  horaLocal,
   LOTE_EXPO_MAX,
   PUSH_TZ_PADRAO,
+  podeEnviar,
 } from '../limites';
 
 const TZ = 'America/Araguaina'; // Palmas/TO, UTC-3, sem horário de verão
@@ -34,11 +34,18 @@ describe('horaLocal / dataLocal', () => {
 
 describe('dadosDeRota — data cru { tipo, ...ids }', () => {
   it('copia só os ids de rota presentes no payload (sem JOIN)', () => {
-    expect(dadosDeRota('ponto_vencido', { ponto_id: 'p1', foo: 'bar' })).toEqual({
+    expect(
+      dadosDeRota('ponto_vencido', { ponto_id: 'p1', foo: 'bar' }),
+    ).toEqual({
       tipo: 'ponto_vencido',
       ponto_id: 'p1',
     });
-    expect(dadosDeRota('pedido_ajuda', { pedido_id: 'pd1', data_alvo: '2026-01-15' })).toEqual({
+    expect(
+      dadosDeRota('pedido_ajuda', {
+        pedido_id: 'pd1',
+        data_alvo: '2026-01-15',
+      }),
+    ).toEqual({
       tipo: 'pedido_ajuda',
       pedido_id: 'pd1',
     });
@@ -55,24 +62,33 @@ describe('dadosDeRota — data cru { tipo, ...ids }', () => {
 
   it('omite ids ausentes ou não-string', () => {
     expect(dadosDeRota('ponto_vencido', {})).toEqual({ tipo: 'ponto_vencido' });
-    expect(dadosDeRota('ponto_vencido', { ponto_id: 42 })).toEqual({ tipo: 'ponto_vencido' });
+    expect(dadosDeRota('ponto_vencido', { ponto_id: 42 })).toEqual({
+      tipo: 'ponto_vencido',
+    });
   });
 });
 
 describe('conteudoPara', () => {
   it('usa o texto padrão do tipo', () => {
-    expect(conteudoPara('ponto_vencido', {}).titulo).toBe('Um ponto precisa de você');
+    expect(conteudoPara('ponto_vencido', {}).titulo).toBe(
+      'Um ponto precisa de você',
+    );
   });
 
   it('usa vocabulário canônico dos tipos §7.5', () => {
     expect(conteudoPara('registro_em_ponto_seguido', {}).titulo).toBe(
-      'Novo registro em ponto seguido'
+      'Novo registro em ponto seguido',
     );
-    expect(conteudoPara('ponto_novo_por_perto', {}).titulo).toBe('Ponto novo por perto');
+    expect(conteudoPara('ponto_novo_por_perto', {}).titulo).toBe(
+      'Ponto novo por perto',
+    );
   });
 
   it('permite override pelo payload', () => {
-    const c = conteudoPara('registro_em_ponto_seguido', { titulo: 'Oi', corpo: 'Tchau' });
+    const c = conteudoPara('registro_em_ponto_seguido', {
+      titulo: 'Oi',
+      corpo: 'Tchau',
+    });
     expect(c).toEqual({ titulo: 'Oi', corpo: 'Tchau' });
   });
 
@@ -87,21 +103,37 @@ describe('podeEnviar (§7.5)', () => {
 
   it('envia durante o dia dentro do teto', () => {
     expect(
-      podeEnviar({ agora: dia, tz: TZ, tipo: 'registro_em_ponto_seguido', payload: {}, enviadasHoje: 0 })
+      podeEnviar({
+        agora: dia,
+        tz: TZ,
+        tipo: 'registro_em_ponto_seguido',
+        payload: {},
+        enviadasHoje: 0,
+      }),
     ).toEqual({ enviar: true, motivo: 'ok' });
   });
 
   it('bloqueia ao atingir o teto diário de 5', () => {
     expect(
-      podeEnviar({ agora: dia, tz: TZ, tipo: 'registro_em_ponto_seguido', payload: {}, enviadasHoje: 5 })
-        .motivo
+      podeEnviar({
+        agora: dia,
+        tz: TZ,
+        tipo: 'registro_em_ponto_seguido',
+        payload: {},
+        enviadasHoje: 5,
+      }).motivo,
     ).toBe('teto_diario');
   });
 
   it('silencia entre 22h e 7h', () => {
     expect(
-      podeEnviar({ agora: noite, tz: TZ, tipo: 'registro_em_ponto_seguido', payload: {}, enviadasHoje: 0 })
-        .motivo
+      podeEnviar({
+        agora: noite,
+        tz: TZ,
+        tipo: 'registro_em_ponto_seguido',
+        payload: {},
+        enviadasHoje: 0,
+      }).motivo,
     ).toBe('silencio_noturno');
   });
 
@@ -114,7 +146,7 @@ describe('podeEnviar (§7.5)', () => {
         tipo: 'pedido_ajuda',
         payload: { data_alvo: hoje },
         enviadasHoje: 0,
-      })
+      }),
     ).toEqual({ enviar: true, motivo: 'ok' });
   });
 
@@ -126,7 +158,7 @@ describe('podeEnviar (§7.5)', () => {
         tipo: 'pedido_ajuda',
         payload: { data_alvo: '2020-01-01' },
         enviadasHoje: 0,
-      }).motivo
+      }).motivo,
     ).toBe('silencio_noturno');
   });
 
@@ -139,7 +171,7 @@ describe('podeEnviar (§7.5)', () => {
         tipo: 'pedido_ajuda',
         payload: { data_alvo: hoje },
         enviadasHoje: 5,
-      }).motivo
+      }).motivo,
     ).toBe('teto_diario');
   });
 });

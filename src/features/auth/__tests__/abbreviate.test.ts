@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { abbreviateName, nomeAutor, AUTOR_REMOVIDO } from '../abbreviate';
+import { AUTOR_REMOVIDO, abbreviateName, nomeAutor } from '../abbreviate';
 
 describe('abbreviateName', () => {
   it('primeiro nome + inicial do sobrenome', () => {

@@ -1,8 +1,8 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import { queryClient } from '@/lib/query';
-import { signOut } from '@/features/auth/signOut';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { nomeAutor } from '@/features/auth/abbreviate';
+import { signOut } from '@/features/auth/signOut';
+import { queryClient } from '@/lib/query';
+import { supabase } from '@/lib/supabase';
 import {
   type Preferencias,
   type PreferenciasRow,
@@ -49,12 +49,16 @@ export function useSalvarPreferencias(userId: string) {
     // refetch em voo e guarda o valor anterior para reverter se o upsert falhar.
     onMutate: async (prefs: Preferencias) => {
       await queryClient.cancelQueries({ queryKey: ['preferencias', userId] });
-      const anterior = queryClient.getQueryData<Preferencias>(['preferencias', userId]);
+      const anterior = queryClient.getQueryData<Preferencias>([
+        'preferencias',
+        userId,
+      ]);
       queryClient.setQueryData(['preferencias', userId], prefs);
       return { anterior };
     },
     onError: (_err, _prefs, ctx) => {
-      if (ctx?.anterior) queryClient.setQueryData(['preferencias', userId], ctx.anterior);
+      if (ctx?.anterior)
+        queryClient.setQueryData(['preferencias', userId], ctx.anterior);
       queryClient.invalidateQueries({ queryKey: ['preferencias', userId] });
     },
   });
@@ -78,7 +82,9 @@ async function fetchBloqueados(userId: string): Promise<Bloqueado[]> {
   // vezes: user_id e bloqueado_id).
   const { data, error } = await db
     .from('bloqueios')
-    .select('bloqueado_id, bloqueados:profiles!bloqueios_bloqueado_id_fkey(nome, avatar_url)')
+    .select(
+      'bloqueado_id, bloqueados:profiles!bloqueios_bloqueado_id_fkey(nome, avatar_url)',
+    )
     .eq('user_id', userId);
   if (error) throw error;
   return (data as BloqueioRow[]).map((row) => ({

@@ -1,7 +1,8 @@
 // Tipos + normalização + formatadores puros do feed da comunidade (§6.8).
-import type { Database } from '@/lib/database.types';
+
 import { nomeAutor } from '@/features/auth/abbreviate';
 import { formatarConteudoRegistro } from '@/features/ponto/dados';
+import type { Database } from '@/lib/database.types';
 
 // Raio padrão do escopo "Perto de mim". O seletor de raio (§6.13, aba
 // Configurações) ainda não existe; quando existir, este valor vem da

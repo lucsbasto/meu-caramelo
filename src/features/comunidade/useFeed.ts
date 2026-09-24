@@ -1,18 +1,16 @@
 // Feed da comunidade (§6.8): query paginada por recência + realtime só para
 // pedidos de ajuda novos. A ordem é estritamente cronológica — sem relevância.
+
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-import {
-  useInfiniteQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import type { Centro } from '@/features/mapa/usePontos';
+import { supabase } from '@/lib/supabase';
 import {
-  PAGINA_FEED,
-  RAIO_FEED_M,
-  normalizarItemFeed,
   type EscopoFeed,
   type ItemFeed,
+  normalizarItemFeed,
+  PAGINA_FEED,
+  RAIO_FEED_M,
 } from './feed';
 
 // Cursor de keyset: (criado_em, id) do último item da página desempata itens
@@ -33,7 +31,7 @@ function chaveFeed(escopo: EscopoFeed, centro: Centro | null) {
 async function buscarPagina(
   escopo: EscopoFeed,
   centro: Centro | null,
-  antes: Cursor
+  antes: Cursor,
 ): Promise<ItemFeed[]> {
   // "Seguindo" ignora o raio; sem centro, usa (0,0) — não é lido nesse escopo.
   const origem = centro ?? { lat: 0, lng: 0 };
@@ -64,7 +62,9 @@ export function useFeed(escopo: EscopoFeed, centro: Centro | null) {
     getNextPageParam: (ultimaPagina): Cursor | undefined => {
       if (ultimaPagina.length < PAGINA_FEED) return undefined;
       const ultimo = ultimaPagina[ultimaPagina.length - 1];
-      return ultimo ? { antes: ultimo.criadoEm, antesId: ultimo.id } : undefined;
+      return ultimo
+        ? { antes: ultimo.criadoEm, antesId: ultimo.id }
+        : undefined;
     },
     enabled: habilitado,
   });
@@ -79,7 +79,7 @@ export function useFeed(escopo: EscopoFeed, centro: Centro | null) {
         { event: 'INSERT', schema: 'public', table: 'pedidos_ajuda' },
         () => {
           queryClient.invalidateQueries({ queryKey: ['feed'] });
-        }
+        },
       )
       .subscribe();
 
@@ -88,10 +88,7 @@ export function useFeed(escopo: EscopoFeed, centro: Centro | null) {
     };
   }, [queryClient]);
 
-  const itens = useMemo(
-    () => query.data?.pages.flat() ?? [],
-    [query.data]
-  );
+  const itens = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
 
   return { ...query, itens };
 }

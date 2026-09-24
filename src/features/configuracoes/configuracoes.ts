@@ -28,7 +28,11 @@ export type PreferenciasRow = Partial<Notificacoes> & {
 
 // Ordem e rótulos dos interruptores, do mais importante ao menos (§6.13). O
 // "ponto vencido" vem primeiro de propósito: é o aviso que ninguém deve perder.
-export const NOTIFICACOES: { chave: ChaveNotificacao; rotulo: string; descricao: string }[] = [
+export const NOTIFICACOES: {
+  chave: ChaveNotificacao;
+  rotulo: string;
+  descricao: string;
+}[] = [
   {
     chave: 'notif_ponto_vencido',
     rotulo: 'Ponto vencido',
@@ -84,7 +88,9 @@ function raioValido(m: number | null | undefined): RaioM {
 
 // Row do banco -> preferências completas, preenchendo o que falta com o padrão.
 // Uma pessoa sem linha (row null/undefined) recebe tudo ligado.
-export function preferenciasDeRow(row: PreferenciasRow | null | undefined): Preferencias {
+export function preferenciasDeRow(
+  row: PreferenciasRow | null | undefined,
+): Preferencias {
   if (!row) return { ...PREFERENCIAS_PADRAO };
   const prefs = { ...PREFERENCIAS_PADRAO };
   for (const chave of CHAVES_NOTIF) {
@@ -96,7 +102,10 @@ export function preferenciasDeRow(row: PreferenciasRow | null | undefined): Pref
 
 // Preferências -> payload de upsert (inclui user_id, sem atualizado_em, que o
 // banco carimba). Serve para gravar o estado inteiro de uma vez.
-export function rowDePreferencias(userId: string, prefs: Preferencias): PreferenciasRow & { user_id: string } {
+export function rowDePreferencias(
+  userId: string,
+  prefs: Preferencias,
+): PreferenciasRow & { user_id: string } {
   return {
     user_id: userId,
     notif_ponto_vencido: prefs.notif_ponto_vencido,

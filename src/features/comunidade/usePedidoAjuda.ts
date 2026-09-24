@@ -3,8 +3,8 @@
 // nem a unique nova, então casteamos na fronteira do supabase — igual às notas
 // dos WPs anteriores (useMantenedores).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/session';
+import { supabase } from '@/lib/supabase';
 
 // Cast único na fronteira: libera .rpc()/.from() que os tipos gerados ainda não
 // enxergam por completo (RPC nova, insert sem regen contra o hosted).
@@ -20,7 +20,10 @@ export function chavePedidoAberto(pontoId: string, dataISO: string | null) {
 // Verifica se já há um pedido ABERTO para o ponto naquela data (§6.9 Estados):
 // a folha mostra o existente e oferece "Ver pedido" em vez de duplicar. Só roda
 // com uma data resolvida.
-export function usePedidoAbertoExistente(pontoId: string, dataISO: string | null) {
+export function usePedidoAbertoExistente(
+  pontoId: string,
+  dataISO: string | null,
+) {
   return useQuery<string | null>({
     queryKey: chavePedidoAberto(pontoId, dataISO),
     enabled: dataISO != null,
@@ -82,7 +85,9 @@ export function useCobrirPedido() {
 
   return useMutation<string, Error, string>({
     mutationFn: async (pedidoId: string) => {
-      const { data, error } = await db.rpc('cobrir_pedido', { p_pedido: pedidoId });
+      const { data, error } = await db.rpc('cobrir_pedido', {
+        p_pedido: pedidoId,
+      });
       if (error) throw error;
       return data as string;
     },

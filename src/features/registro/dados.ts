@@ -1,6 +1,7 @@
 // Tipos + normalização + formatadores puros do detalhe do registro (§6.10).
-import type { Tables } from '@/lib/database.types';
+
 import { nomeAutor } from '@/features/auth/abbreviate';
+import type { Tables } from '@/lib/database.types';
 
 // Linha crua do registro com o autor (profiles) e o ponto (pontos) embutidos.
 export type RegistroDetalheRow = Tables<'registros'> & {
@@ -24,7 +25,9 @@ export type RegistroDetalhe = {
   fotoUrl: string | null;
 };
 
-export function normalizarRegistroDetalhe(row: RegistroDetalheRow): RegistroDetalhe {
+export function normalizarRegistroDetalhe(
+  row: RegistroDetalheRow,
+): RegistroDetalhe {
   return {
     id: row.id,
     pontoId: row.ponto_id,
@@ -74,8 +77,18 @@ export type EstadoReacao = {
 };
 
 const MESES = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
 ];
 
 function horaMinuto(d: Date): string {
@@ -93,7 +106,10 @@ function inicioDoDia(x: Date): number {
 // Data/hora ABSOLUTA do registro (§6.10): ao contrário das listas (tempo
 // relativo), a tela de detalhe mostra o momento cheio. "hoje às 7h10" ·
 // "ontem às 7h10" · "12 de março às 7h10". `agora` é injetável para teste.
-export function formatarDataHoraCompleta(criadoEm: string, agora: Date = new Date()): string {
+export function formatarDataHoraCompleta(
+  criadoEm: string,
+  agora: Date = new Date(),
+): string {
   const d = new Date(criadoEm);
   const hm = horaMinuto(d);
   const dias = Math.round((inicioDoDia(agora) - inicioDoDia(d)) / 86_400_000);
@@ -103,7 +119,10 @@ export function formatarDataHoraCompleta(criadoEm: string, agora: Date = new Dat
 }
 
 // Tempo relativo do comentário (§6.10): "agora" · "há 6 h" · "ontem" · "há 3 dias".
-export function formatarTempoComentario(criadoEm: string, agora: Date = new Date()): string {
+export function formatarTempoComentario(
+  criadoEm: string,
+  agora: Date = new Date(),
+): string {
   const horas = (agora.getTime() - new Date(criadoEm).getTime()) / 3_600_000;
   if (horas < 1) return 'agora';
   if (horas < 24) return `há ${Math.floor(horas)} h`;

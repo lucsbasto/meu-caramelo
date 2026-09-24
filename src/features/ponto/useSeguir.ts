@@ -6,7 +6,10 @@ function chave(pontoId: string, userId: string | null) {
   return ['ponto', pontoId, 'seguindo', userId] as const;
 }
 
-async function buscarSeguindo(pontoId: string, userId: string): Promise<boolean> {
+async function buscarSeguindo(
+  pontoId: string,
+  userId: string,
+): Promise<boolean> {
   const { data, error } = await supabase
     .from('pontos_seguidos')
     .select('ponto_id')

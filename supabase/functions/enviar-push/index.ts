@@ -29,9 +29,9 @@ import {
   dataLocal,
   dividirEmLotes,
   LOTE_EXPO_MAX,
-  podeEnviar,
-  PUSH_TZ_PADRAO,
   type Payload,
+  PUSH_TZ_PADRAO,
+  podeEnviar,
 } from './limites.ts';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
@@ -62,14 +62,20 @@ Deno.serve(async (req) => {
   // endpoint fica aberto; quando EDGE_CRON_SECRET está setado exigimos o mesmo
   // secret no header que o heartbeat pg_cron lê do Vault.
   const cronSecret = Deno.env.get('EDGE_CRON_SECRET') ?? '';
-  if (cronSecret && req.headers.get('Authorization') !== `Bearer ${cronSecret}`) {
+  if (
+    cronSecret &&
+    req.headers.get('Authorization') !== `Bearer ${cronSecret}`
+  ) {
     return json({ erro: 'não autorizado' }, 401);
   }
 
   const url = Deno.env.get('SUPABASE_URL');
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) {
-    return json({ erro: 'faltam SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+    return json(
+      { erro: 'faltam SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' },
+      500,
+    );
   }
   const tz = Deno.env.get('PUSH_TZ') ?? PUSH_TZ_PADRAO;
   const expoAccessToken = Deno.env.get('EXPO_ACCESS_TOKEN') ?? '';
@@ -102,11 +108,14 @@ Deno.serve(async (req) => {
       .select('push_enviado_em')
       .eq('user_id', userId)
       .eq('push_status', 'sent')
-      .gte('push_enviado_em', new Date(agora.getTime() - 36 * 3600 * 1000).toISOString());
+      .gte(
+        'push_enviado_em',
+        new Date(agora.getTime() - 36 * 3600 * 1000).toISOString(),
+      );
     const n = (data ?? []).filter(
       (r) =>
         typeof r.push_enviado_em === 'string' &&
-        dataLocal(new Date(r.push_enviado_em), tz) === hoje
+        dataLocal(new Date(r.push_enviado_em), tz) === hoje,
     ).length;
     enviadasHoje.set(userId, n);
     return n;

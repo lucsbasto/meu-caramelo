@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, spacing, fonts } from '@/theme';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createSessionFromUrl } from '@/features/auth/callback';
+import { colors, fonts, spacing } from '@/theme';
 
 // Handler do deep-link do magic link (research §3). Trata cold-start e
 // warm links: parseia `?code=` e troca por sessão, depois volta ao app.
@@ -29,7 +29,7 @@ export default function AuthCallback() {
         setError(
           err instanceof Error
             ? err.message
-            : 'Não deu para validar o link. Ele pode ter expirado.'
+            : 'Não deu para validar o link. Ele pode ter expirado.',
         );
       });
   }, [url, next, router]);

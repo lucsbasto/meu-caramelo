@@ -9,14 +9,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import {
-  normalizarEstatisticas,
   type EstatisticasCidade,
+  normalizarEstatisticas,
 } from './estatisticas';
 
 // Cast no ponto de fronteira: libera `.rpc()` de uma função que os tipos
 // gerados ainda não enxergam (mesmo padrão de useMantenedores).
 const db = supabase as unknown as {
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<{
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{
     data: unknown;
     error: { message: string } | null;
   }>;

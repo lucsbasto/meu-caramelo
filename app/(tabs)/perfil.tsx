@@ -1,28 +1,31 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   Image,
   Pressable,
-  TextInput,
-  StyleSheet,
-  ActivityIndicator,
   ScrollView,
-  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
-import { colors, spacing, radii, touch, fonts } from '@/theme';
-import { supabase } from '@/lib/supabase';
-import { queryClient } from '@/lib/query';
-import type { Tables } from '@/lib/database.types';
-import { useAuth } from '@/features/auth/session';
-import { signOut } from '@/features/auth/signOut';
 import { abbreviateName } from '@/features/auth/abbreviate';
 import { LoginWall } from '@/features/auth/LoginWall';
-import { useMeusPontos, type PontoDaLista } from '@/features/ponto/useEditorPonto';
+import { useAuth } from '@/features/auth/session';
+import { signOut } from '@/features/auth/signOut';
+import {
+  type PontoDaLista,
+  useMeusPontos,
+} from '@/features/ponto/useEditorPonto';
+import type { Tables } from '@/lib/database.types';
+import { queryClient } from '@/lib/query';
+import { supabase } from '@/lib/supabase';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 
 type Profile = Tables<'profiles'>;
 
@@ -91,12 +94,7 @@ function SignedInProfile({ userId }: { userId: string }) {
   }
 
   if (editing) {
-    return (
-      <EditProfile
-        profile={profile}
-        onDone={() => setEditing(false)}
-      />
-    );
+    return <EditProfile profile={profile} onDone={() => setEditing(false)} />;
   }
 
   return (
@@ -134,7 +132,10 @@ function SignedInProfile({ userId }: { userId: string }) {
             apagar conta ficam na tela empilhada (§6.13). */}
         <Pressable
           onPress={() => router.push('/configuracoes')}
-          style={({ pressed }) => [styles.configRow, pressed && styles.pontoLinhaPressed]}
+          style={({ pressed }) => [
+            styles.configRow,
+            pressed && styles.pontoLinhaPressed,
+          ]}
           accessibilityRole="button"
         >
           <Text style={styles.configLabel}>Configurações</Text>
@@ -165,7 +166,7 @@ function SairDaConta() {
           } catch (e) {
             Alert.alert(
               'Erro',
-              e instanceof Error ? e.message : 'Não deu para sair agora.'
+              e instanceof Error ? e.message : 'Não deu para sair agora.',
             );
             setSaindo(false);
           }
@@ -178,7 +179,10 @@ function SairDaConta() {
     <Pressable
       onPress={confirmar}
       disabled={saindo}
-      style={({ pressed }) => [styles.sairBtn, pressed && styles.sairBtnPressed]}
+      style={({ pressed }) => [
+        styles.sairBtn,
+        pressed && styles.sairBtnPressed,
+      ]}
       accessibilityRole="button"
     >
       {saindo ? (
@@ -208,9 +212,14 @@ function MeusPontos({ userId }: { userId: string }) {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.md }} />
+        <ActivityIndicator
+          color={colors.caramelo}
+          style={{ marginVertical: spacing.md }}
+        />
       ) : isError ? (
-        <Text style={styles.pontosErro}>Não deu para carregar seus pontos.</Text>
+        <Text style={styles.pontosErro}>
+          Não deu para carregar seus pontos.
+        </Text>
       ) : !pontos || pontos.length === 0 ? (
         // Perfil novo: convite, sem culpa (§6.12 Estados).
         <View style={styles.inviteCard}>
@@ -244,7 +253,10 @@ function LinhaPonto({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.pontoLinha, pressed && styles.pontoLinhaPressed]}
+      style={({ pressed }) => [
+        styles.pontoLinha,
+        pressed && styles.pontoLinhaPressed,
+      ]}
       accessibilityRole="button"
     >
       <View style={styles.pontoInfo}>
@@ -274,7 +286,7 @@ function EditProfile({
   // gravação da URL pública ficam para um follow-up (bucket não provisionado
   // neste WP); aqui a foto é opcional e só pré-visualizada.
   const [localAvatar, setLocalAvatar] = useState<string | null>(
-    profile.avatar_url
+    profile.avatar_url,
   );
 
   const mutation = useMutation({
@@ -292,7 +304,7 @@ function EditProfile({
     onError: (err) => {
       Alert.alert(
         'Erro',
-        err instanceof Error ? err.message : 'Não deu para salvar.'
+        err instanceof Error ? err.message : 'Não deu para salvar.',
       );
     },
   });
@@ -302,7 +314,7 @@ function EditProfile({
     if (!perm.granted) {
       Alert.alert(
         'Permissão necessária',
-        'Libere o acesso às fotos para escolher um avatar.'
+        'Libere o acesso às fotos para escolher um avatar.',
       );
       return;
     }
@@ -579,8 +591,17 @@ const styles = StyleSheet.create({
   },
   pontoLinhaPressed: { backgroundColor: colors.bg },
   pontoInfo: { flex: 1, gap: 2 },
-  pontoNome: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.text },
-  pontoEndereco: { fontFamily: fonts.body, fontSize: 13, color: colors.textTertiary },
+  pontoNome: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  pontoEndereco: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textTertiary,
+  },
   pontoInativo: { fontFamily: fonts.body, fontSize: 12, color: colors.alerta },
   pontoSeta: { fontFamily: fonts.body, fontSize: 22, color: colors.textWeak },
 

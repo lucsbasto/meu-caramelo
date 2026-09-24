@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 import {
-  preferenciasDeRow,
-  rowDePreferencias,
-  rotuloRaio,
-  PREFERENCIAS_PADRAO,
-  NOTIFICACOES,
-  RAIOS,
   APAGAR_CONTA_MENSAGEM,
+  NOTIFICACOES,
+  PREFERENCIAS_PADRAO,
   type Preferencias,
+  preferenciasDeRow,
+  RAIOS,
+  rotuloRaio,
+  rowDePreferencias,
 } from '../configuracoes';
 
 describe('preferenciasDeRow', () => {
@@ -18,7 +18,10 @@ describe('preferenciasDeRow', () => {
   });
 
   it('respeita interruptores desligados sem mexer nos outros', () => {
-    const prefs = preferenciasDeRow({ notif_comentario: false, notif_ponto_vencido: false });
+    const prefs = preferenciasDeRow({
+      notif_comentario: false,
+      notif_ponto_vencido: false,
+    });
     expect(prefs.notif_comentario).toBe(false);
     expect(prefs.notif_ponto_vencido).toBe(false);
     expect(prefs.notif_pedido_ajuda).toBe(true);

@@ -1,6 +1,6 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, spacing, radii, touch, fonts } from '@/theme';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 
 type LoginWallProps = {
   // Frase de contexto que muda conforme a origem (§6.2 / §7.1).

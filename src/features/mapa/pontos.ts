@@ -1,9 +1,5 @@
 import type { Database } from '@/lib/database.types';
-import {
-  statusColor,
-  statusFromHoras,
-  type PontoStatus,
-} from '@/theme';
+import { type PontoStatus, statusColor, statusFromHoras } from '@/theme';
 
 // Linha crua da RPC pontos_proximos (= view pontos_com_status)
 export type PontoRow =
@@ -78,15 +74,13 @@ export function aplicarFiltro(pontos: Ponto[], filtro: Filtro): Ponto[] {
   if (filtro === 'todos') return pontos;
   if (filtro === 'ok') return pontos.filter((p) => p.status === 'ok');
   // "precisa hoje" = precisa + urgente (órfão não tem quem alimente)
-  return pontos.filter(
-    (p) => p.status === 'precisa' || p.status === 'urgente'
-  );
+  return pontos.filter((p) => p.status === 'precisa' || p.status === 'urgente');
 }
 
 // Distância aproximada usuário -> ponto (Haversine, metros)
 export function distanciaMetros(
   a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
+  b: { lat: number; lng: number },
 ): number {
   const R = 6371000;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;

@@ -2,6 +2,10 @@
 // expor a casa de ninguém. Compartilhado pelas rotas /ponto/novo e
 // /ponto/:id/editar. As regras de permissão vivem na RLS; a UI só oferece as
 // ações a quem já está autenticado (e, na edição, a mantenedores).
+
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,29 +20,25 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
-
-import { colors, fonts, radii, spacing, touch } from '@/theme';
-import { useAuth } from '@/features/auth/session';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { LoginWall } from '@/features/auth/LoginWall';
-import { arredondarCoord, formatarDistancia } from '@/features/mapa/pontos';
+import { useAuth } from '@/features/auth/session';
 import { CENTRO_PADRAO } from '@/features/mapa/MapaScreen';
+import { arredondarCoord, formatarDistancia } from '@/features/mapa/pontos';
 import { queryClient } from '@/lib/query';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
+import { AVISO_PRIVACIDADE, type Coord, DICA_NOME, nomeValido } from './editor';
 import { SeletorMapa } from './SeletorMapa';
 import {
-  AVISO_PRIVACIDADE,
-  DICA_NOME,
-  nomeValido,
-  type Coord,
-} from './editor';
-import {
   buscarPontoProximo,
+  type FotoEditavel,
   geocodeReverso,
   gravarFotoUrl,
   inserirFotoPonto,
+  type PontoProximo,
   removerFotoPonto,
   subirFotoGaleria,
   useAtualizarPonto,
@@ -50,8 +50,6 @@ import {
   usePontoEditavel,
   useReativarPonto,
   useSairMantenedor,
-  type FotoEditavel,
-  type PontoProximo,
 } from './useEditorPonto';
 
 type Props = {
@@ -66,7 +64,11 @@ export function EditorPontoScreen({ modo, id, coordInicial }: Props) {
   const meusPontos = useMeusPontos(user?.id ?? null);
 
   if (loading) {
-    return <TelaCentral><ActivityIndicator color={colors.caramelo} /></TelaCentral>;
+    return (
+      <TelaCentral>
+        <ActivityIndicator color={colors.caramelo} />
+      </TelaCentral>
+    );
   }
 
   // Cadastrar/editar exige identidade (§6.6 Regras) — parede de login.
@@ -82,12 +84,18 @@ export function EditorPontoScreen({ modo, id, coordInicial }: Props) {
 
   if (modo === 'editar') {
     if (editavel.isLoading || meusPontos.isLoading) {
-      return <TelaCentral><ActivityIndicator color={colors.caramelo} /></TelaCentral>;
+      return (
+        <TelaCentral>
+          <ActivityIndicator color={colors.caramelo} />
+        </TelaCentral>
+      );
     }
     if (editavel.isError || !editavel.data) {
       return (
         <TelaCentral>
-          <Text style={styles.textoCentral}>Não deu para carregar este ponto.</Text>
+          <Text style={styles.textoCentral}>
+            Não deu para carregar este ponto.
+          </Text>
         </TelaCentral>
       );
     }
@@ -181,7 +189,9 @@ function EditorForm({
   const [fotosNovas, setFotosNovas] = useState<string[]>([]);
 
   const fotosSalvas: FotoEditavel[] = fotosSalvasQuery.data ?? [];
-  const fotosSalvasVisiveis = fotosSalvas.filter((f) => !removidasIds.includes(f.id));
+  const fotosSalvasVisiveis = fotosSalvas.filter(
+    (f) => !removidasIds.includes(f.id),
+  );
 
   // Endereço editado à mão não é sobrescrito pela geocodificação até o pin
   // se mexer de novo (§6.6: arrastar o pin refaz a geocodificação).
@@ -308,7 +318,10 @@ function EditorForm({
   async function escolherDaGaleria() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permissão necessária', 'Libere as fotos para escolher uma imagem.');
+      Alert.alert(
+        'Permissão necessária',
+        'Libere as fotos para escolher uma imagem.',
+      );
       return;
     }
     const r = await ImagePicker.launchImageLibraryAsync({
@@ -328,7 +341,9 @@ function EditorForm({
   }
 
   function removerSalva(fotoId: string) {
-    setRemovidasIds((atuais) => (atuais.includes(fotoId) ? atuais : [...atuais, fotoId]));
+    setRemovidasIds((atuais) =>
+      atuais.includes(fotoId) ? atuais : [...atuais, fotoId],
+    );
   }
 
   function removerNova(uri: string) {
@@ -348,13 +363,19 @@ function EditorForm({
     // onde parou, sem re-remover, re-subir nem re-inserir o que já concluiu
     // (senão a galeria ganharia fotos duplicadas e arquivos órfãos).
     const removerFila = removidasIds
-      .map((fid) => ({ id: fid, url: fotosSalvas.find((f) => f.id === fid)?.url ?? '' }))
+      .map((fid) => ({
+        id: fid,
+        url: fotosSalvas.find((f) => f.id === fid)?.url ?? '',
+      }))
       .filter((r) => r.url);
     const subirFila = [...fotosNovas];
     const urlsNovas: string[] = [];
     // Próxima ordem = maior ordem salva restante + 1 (não o tamanho da lista,
     // que colide quando se remove uma foto do meio).
-    const maiorOrdem = fotosSalvasVisiveis.reduce((m, f) => Math.max(m, f.ordem), -1);
+    const maiorOrdem = fotosSalvasVisiveis.reduce(
+      (m, f) => Math.max(m, f.ordem),
+      -1,
+    );
     let proximaOrdem = maiorOrdem + 1;
 
     return new Promise((resolve) => {
@@ -367,7 +388,12 @@ function EditorForm({
           }
           while (subirFila.length > 0) {
             const url = await subirFotoGaleria(pontoId, subirFila[0]);
-            await inserirFotoPonto({ pontoId, url, ordem: proximaOrdem, userId: usuarioId });
+            await inserirFotoPonto({
+              pontoId,
+              url,
+              ordem: proximaOrdem,
+              userId: usuarioId,
+            });
             urlsNovas.push(url);
             proximaOrdem += 1;
             subirFila.shift();
@@ -381,9 +407,13 @@ function EditorForm({
             'Fotos não enviadas',
             'O ponto foi salvo, mas as fotos não subiram. Você pode tentar de novo.',
             [
-              { text: 'Seguir sem fotos', style: 'cancel', onPress: () => resolve() },
+              {
+                text: 'Seguir sem fotos',
+                style: 'cancel',
+                onPress: () => resolve(),
+              },
               { text: 'Tentar de novo', onPress: () => void tentar() },
-            ]
+            ],
           );
         }
       };
@@ -405,7 +435,12 @@ function EditorForm({
         // então uma falha no passo do mantenedor não duplica o cadastro.
         let novoId = pontoCriadoIdRef.current;
         if (novoId) {
-          await atualizar.mutateAsync({ id: novoId, nome, coord, endereco: endereco || null });
+          await atualizar.mutateAsync({
+            id: novoId,
+            nome,
+            coord,
+            endereco: endereco || null,
+          });
         } else {
           novoId = await criar.mutateAsync({
             nome,
@@ -416,7 +451,10 @@ function EditorForm({
           pontoCriadoIdRef.current = novoId;
         }
         // Passo idempotente: registra o criador como mantenedor principal.
-        await garantirMantenedor.mutateAsync({ pontoId: novoId, userId: usuarioId });
+        await garantirMantenedor.mutateAsync({
+          pontoId: novoId,
+          userId: usuarioId,
+        });
         if (fotosNovas.length > 0) await salvarGaleriaComGraca(novoId);
         queryClient.invalidateQueries({ queryKey: ['pontos'] });
         queryClient.invalidateQueries({ queryKey: ['meus-pontos'] });
@@ -424,7 +462,12 @@ function EditorForm({
         // Cria, fecha e abre o detalhe do ponto novo (§6.6 Interações).
         router.replace(`/ponto/${novoId}`);
       } else if (id) {
-        await atualizar.mutateAsync({ id, nome, coord, endereco: endereco || null });
+        await atualizar.mutateAsync({
+          id,
+          nome,
+          coord,
+          endereco: endereco || null,
+        });
         if (temMudancaGaleria) {
           await salvarGaleriaComGraca(id);
           queryClient.invalidateQueries({ queryKey: ['ponto', id, 'fotos'] });
@@ -446,7 +489,7 @@ function EditorForm({
           ? 'O ponto foi criado, mas faltou concluir. Toque em salvar de novo para terminar sem duplicar o cadastro.'
           : err instanceof Error
             ? err.message
-            : 'Tente novamente.'
+            : 'Tente novamente.',
       );
     }
   }
@@ -465,11 +508,14 @@ function EditorForm({
             desativar.mutate(id, {
               onSuccess: () => router.back(),
               onError: (e) =>
-                Alert.alert('Erro', e instanceof Error ? e.message : 'Não deu para desativar.'),
+                Alert.alert(
+                  'Erro',
+                  e instanceof Error ? e.message : 'Não deu para desativar.',
+                ),
             });
           },
         },
-      ]
+      ],
     );
   }
 
@@ -481,7 +527,10 @@ function EditorForm({
         Alert.alert('Ponto reativado', 'Ele volta a aparecer no mapa.');
       },
       onError: (e) =>
-        Alert.alert('Erro', e instanceof Error ? e.message : 'Não deu para reativar.'),
+        Alert.alert(
+          'Erro',
+          e instanceof Error ? e.message : 'Não deu para reativar.',
+        ),
     });
   }
 
@@ -502,18 +551,27 @@ function EditorForm({
                 onSuccess: (resultado) => {
                   router.back();
                   if (resultado === 'promovido') {
-                    Alert.alert('Você saiu', 'O co-mantenedor mais antigo agora mantém o ponto.');
+                    Alert.alert(
+                      'Você saiu',
+                      'O co-mantenedor mais antigo agora mantém o ponto.',
+                    );
                   } else if (resultado === 'orfao') {
-                    Alert.alert('Você saiu', 'O ponto ficou órfão até alguém adotar.');
+                    Alert.alert(
+                      'Você saiu',
+                      'O ponto ficou órfão até alguém adotar.',
+                    );
                   }
                 },
                 onError: (e) =>
-                  Alert.alert('Erro', e instanceof Error ? e.message : 'Não deu para sair.'),
-              }
+                  Alert.alert(
+                    'Erro',
+                    e instanceof Error ? e.message : 'Não deu para sair.',
+                  ),
+              },
             );
           },
         },
-      ]
+      ],
     );
   }
 
@@ -531,7 +589,9 @@ function EditorForm({
             accessibilityRole="button"
             accessibilityLabel="Voltar"
           >
-            <Text style={[styles.voltar, salvando && styles.desabilitadoTexto]}>‹ Voltar</Text>
+            <Text style={[styles.voltar, salvando && styles.desabilitadoTexto]}>
+              ‹ Voltar
+            </Text>
           </Pressable>
           <Text style={styles.tituloCabecalho}>{titulo}</Text>
           <Pressable
@@ -541,7 +601,12 @@ function EditorForm({
             accessibilityRole="button"
             accessibilityLabel="Salvar"
           >
-            <Text style={[styles.salvarTopo, (!valido || salvando) && styles.desabilitadoTexto]}>
+            <Text
+              style={[
+                styles.salvarTopo,
+                (!valido || salvando) && styles.desabilitadoTexto,
+              ]}
+            >
               Salvar
             </Text>
           </Pressable>
@@ -554,10 +619,17 @@ function EditorForm({
       >
         {/* Mini-mapa de 180 px com pin arrastável (§6.6 Anatomia 2). */}
         <View style={styles.miniMapaBloco}>
-          <SeletorMapaMini seedNonce={seedNonce} seed={mapaSeed} onChange={aoMudarCoord} />
+          <SeletorMapaMini
+            seedNonce={seedNonce}
+            seed={mapaSeed}
+            onChange={aoMudarCoord}
+          />
           <Pressable
             onPress={() => setModalMapa(true)}
-            style={({ pressed }) => [styles.ajustarBtn, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.ajustarBtn,
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="button"
           >
             <Text style={styles.ajustarBtnTexto}>Ajustar no mapa</Text>
@@ -566,13 +638,15 @@ function EditorForm({
 
         {/* Coordenada exibida arredondada por privacidade (§7.6). */}
         <Text style={styles.coordTexto}>
-          📍 {arredondarCoord(coord.lat).toFixed(4)}, {arredondarCoord(coord.lng).toFixed(4)}
+          📍 {arredondarCoord(coord.lat).toFixed(4)},{' '}
+          {arredondarCoord(coord.lng).toFixed(4)}
         </Text>
 
         {duplicata && !duplicataDispensada && (
           <View style={styles.duplicataBanner}>
             <Text style={styles.duplicataTexto}>
-              Existe {`'${duplicata.nome}'`} a {formatarDistancia(duplicata.distanciaM)} daqui. É o mesmo lugar?
+              Existe {`'${duplicata.nome}'`} a{' '}
+              {formatarDistancia(duplicata.distanciaM)} daqui. É o mesmo lugar?
             </Text>
             <View style={styles.duplicataAcoes}>
               <Pressable
@@ -581,8 +655,13 @@ function EditorForm({
               >
                 <Text style={styles.duplicataLink}>Ver o existente</Text>
               </Pressable>
-              <Pressable onPress={() => setDuplicataDispensada(true)} hitSlop={8}>
-                <Text style={styles.duplicataDispensar}>Cadastrar mesmo assim</Text>
+              <Pressable
+                onPress={() => setDuplicataDispensada(true)}
+                hitSlop={8}
+              >
+                <Text style={styles.duplicataDispensar}>
+                  Cadastrar mesmo assim
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -623,7 +702,11 @@ function EditorForm({
             contentContainerStyle={styles.fotoStrip}
           >
             {fotosSalvasVisiveis.map((f) => (
-              <MiniaturaFoto key={f.id} uri={f.url} onRemover={() => removerSalva(f.id)} />
+              <MiniaturaFoto
+                key={f.id}
+                uri={f.url}
+                onRemover={() => removerSalva(f.id)}
+              />
             ))}
             {fotosNovas.map((uri, i) => (
               <MiniaturaFoto
@@ -651,15 +734,27 @@ function EditorForm({
         {/* Ações de edição ao final (§6.6 Anatomia 8). */}
         {modo === 'editar' && (
           <View style={styles.acoesEdicao}>
-            <Pressable onPress={onSairMantenedor} hitSlop={8} style={styles.acaoLinha}>
+            <Pressable
+              onPress={onSairMantenedor}
+              hitSlop={8}
+              style={styles.acaoLinha}
+            >
               <Text style={styles.sairMantenedor}>Sair de mantenedor</Text>
             </Pressable>
             {ativo ? (
-              <Pressable onPress={onDesativar} hitSlop={8} style={styles.acaoLinha}>
+              <Pressable
+                onPress={onDesativar}
+                hitSlop={8}
+                style={styles.acaoLinha}
+              >
                 <Text style={styles.desativar}>Desativar ponto</Text>
               </Pressable>
             ) : (
-              <Pressable onPress={onReativar} hitSlop={8} style={styles.acaoLinha}>
+              <Pressable
+                onPress={onReativar}
+                hitSlop={8}
+                style={styles.acaoLinha}
+              >
                 <Text style={styles.reativar}>Reativar ponto</Text>
               </Pressable>
             )}
@@ -668,7 +763,9 @@ function EditorForm({
       </ScrollView>
 
       {/* Botão salvar fixo no rodapé (§6.6 Anatomia 7). */}
-      <View style={[styles.rodape, { paddingBottom: insets.bottom + spacing.md }]}>
+      <View
+        style={[styles.rodape, { paddingBottom: insets.bottom + spacing.md }]}
+      >
         <Pressable
           onPress={onSalvar}
           disabled={!valido || salvando}
@@ -714,7 +811,12 @@ function SeletorMapaMini({
   onChange: (c: Coord) => void;
 }) {
   return (
-    <SeletorMapa key={seedNonce} seed={seed} onChange={onChange} style={styles.miniMapa} />
+    <SeletorMapa
+      key={seedNonce}
+      seed={seed}
+      onChange={onChange}
+      style={styles.miniMapa}
+    />
   );
 }
 
@@ -743,15 +845,31 @@ function ModalAjustarMapa({
             style={StyleSheet.absoluteFill}
           />
         )}
-        <SafeAreaView edges={['top']} style={styles.modalTopo} pointerEvents="box-none">
-          <Pressable onPress={onCancelar} hitSlop={12} style={styles.modalFechar}>
+        <SafeAreaView
+          edges={['top']}
+          style={styles.modalTopo}
+          pointerEvents="box-none"
+        >
+          <Pressable
+            onPress={onCancelar}
+            hitSlop={12}
+            style={styles.modalFechar}
+          >
             <Text style={styles.modalFecharTexto}>✕</Text>
           </Pressable>
         </SafeAreaView>
-        <View style={[styles.modalRodape, { paddingBottom: insets.bottom + spacing.md }]}>
+        <View
+          style={[
+            styles.modalRodape,
+            { paddingBottom: insets.bottom + spacing.md },
+          ]}
+        >
           <Pressable
             onPress={() => onUsar(coord)}
-            style={({ pressed }) => [styles.salvarBtn, pressed && styles.salvarBtnPressed]}
+            style={({ pressed }) => [
+              styles.salvarBtn,
+              pressed && styles.salvarBtnPressed,
+            ]}
             accessibilityRole="button"
           >
             <Text style={styles.salvarBtnTexto}>Usar esta posição</Text>
@@ -767,7 +885,13 @@ function TelaCentral({ children }: { children: React.ReactNode }) {
 }
 
 // Miniatura da galeria no editor: a foto com um botão de remover no canto.
-function MiniaturaFoto({ uri, onRemover }: { uri: string; onRemover: () => void }) {
+function MiniaturaFoto({
+  uri,
+  onRemover,
+}: {
+  uri: string;
+  onRemover: () => void;
+}) {
   return (
     <View style={styles.miniatura}>
       <Image source={{ uri }} style={styles.fotoImagem} />
@@ -793,7 +917,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     padding: spacing.xl,
   },
-  textoCentral: { fontFamily: fonts.body, fontSize: 15, color: colors.textSecondary, textAlign: 'center' },
+  textoCentral: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
 
   safeTopo: { backgroundColor: colors.surface },
   cabecalho: {
@@ -806,8 +935,17 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   voltar: { fontFamily: fonts.body, fontSize: 16, color: colors.caramelo },
-  tituloCabecalho: { fontFamily: fonts.title, fontSize: 18, color: colors.text },
-  salvarTopo: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.caramelo },
+  tituloCabecalho: {
+    fontFamily: fonts.title,
+    fontSize: 18,
+    color: colors.text,
+  },
+  salvarTopo: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
   desabilitadoTexto: { color: colors.textWeak },
 
   conteudo: { padding: spacing.xl, gap: spacing.lg, paddingBottom: 120 },
@@ -823,7 +961,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  ajustarBtnTexto: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.caramelo },
+  ajustarBtnTexto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
 
   coordTexto: {
     fontFamily: fonts.body,
@@ -838,10 +981,24 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
-  duplicataTexto: { fontFamily: fonts.body, fontSize: 14, color: colors.text, lineHeight: 20 },
+  duplicataTexto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+  },
   duplicataAcoes: { flexDirection: 'row', justifyContent: 'space-between' },
-  duplicataLink: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.caramelo },
-  duplicataDispensar: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
+  duplicataLink: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
+  duplicataDispensar: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
 
   campo: { gap: spacing.sm },
   rotulo: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
@@ -857,7 +1014,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  dica: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.textTertiary },
+  dica: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textTertiary,
+  },
 
   foto: {
     width: 98,
@@ -913,9 +1075,23 @@ const styles = StyleSheet.create({
 
   acoesEdicao: { gap: spacing.xs, marginTop: spacing.sm },
   acaoLinha: { minHeight: touch.min, justifyContent: 'center' },
-  sairMantenedor: { fontFamily: fonts.body, fontSize: 15, color: colors.textSecondary },
-  desativar: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.alerta },
-  reativar: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.verde },
+  sairMantenedor: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  desativar: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.alerta,
+  },
+  reativar: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.verde,
+  },
 
   rodape: {
     position: 'absolute',
@@ -938,12 +1114,24 @@ const styles = StyleSheet.create({
   },
   salvarBtnPressed: { backgroundColor: colors.carameloPressed },
   desabilitado: { opacity: 0.5 },
-  salvarBtnTexto: { fontFamily: fonts.body, fontSize: 16, fontWeight: '600', color: colors.onDark },
+  salvarBtnTexto: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.onDark,
+  },
 
   pressed: { opacity: 0.7 },
 
   modalContainer: { flex: 1, backgroundColor: colors.bg },
-  modalTopo: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'flex-end', padding: spacing.md },
+  modalTopo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'flex-end',
+    padding: spacing.md,
+  },
   modalFechar: {
     width: touch.min,
     height: touch.min,
@@ -952,7 +1140,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalFecharTexto: { fontFamily: fonts.body, fontSize: 18, color: colors.text },
+  modalFecharTexto: {
+    fontFamily: fonts.body,
+    fontSize: 18,
+    color: colors.text,
+  },
   modalRodape: {
     position: 'absolute',
     left: 0,

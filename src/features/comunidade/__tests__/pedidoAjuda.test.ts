@@ -52,7 +52,10 @@ describe('validarPedido', () => {
   });
 
   it('barra texto acima do limite', () => {
-    const r = validarPedido({ texto: 'x'.repeat(TEXTO_MAX + 1), dataISO: '2026-09-20' });
+    const r = validarPedido({
+      texto: 'x'.repeat(TEXTO_MAX + 1),
+      dataISO: '2026-09-20',
+    });
     expect(r.ok).toBe(false);
   });
 
@@ -69,18 +72,25 @@ describe('ehErroDeRede', () => {
   });
 
   it('não confunde erro de banco com rede', () => {
-    expect(ehErroDeRede({ code: '23505', message: 'duplicate key' })).toBe(false);
+    expect(ehErroDeRede({ code: '23505', message: 'duplicate key' })).toBe(
+      false,
+    );
   });
 });
 
 describe('mensagemErroCriar', () => {
   it('duplicata (23505) vira aviso de pedido já aberto', () => {
-    const msg = mensagemErroCriar({ code: '23505', message: 'duplicate key value' });
+    const msg = mensagemErroCriar({
+      code: '23505',
+      message: 'duplicate key value',
+    });
     expect(msg).toMatch(/já existe um pedido aberto/i);
   });
 
   it('violação nomeada da unique também é duplicata', () => {
-    const msg = mensagemErroCriar({ message: 'pedidos_ajuda_um_aberto_por_data' });
+    const msg = mensagemErroCriar({
+      message: 'pedidos_ajuda_um_aberto_por_data',
+    });
     expect(msg).toMatch(/já existe um pedido aberto/i);
   });
 
@@ -101,10 +111,14 @@ describe('mensagemErroCobrir', () => {
   });
 
   it('proprio_pedido avisa que não cobre o próprio', () => {
-    expect(mensagemErroCobrir(new Error('proprio_pedido'))).toMatch(/próprio pedido/i);
+    expect(mensagemErroCobrir(new Error('proprio_pedido'))).toMatch(
+      /próprio pedido/i,
+    );
   });
 
   it('pedido_invalido avisa indisponível', () => {
-    expect(mensagemErroCobrir(new Error('pedido_invalido'))).toMatch(/não está mais dispon/i);
+    expect(mensagemErroCobrir(new Error('pedido_invalido'))).toMatch(
+      /não está mais dispon/i,
+    );
   });
 });

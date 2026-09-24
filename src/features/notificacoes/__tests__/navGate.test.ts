@@ -1,24 +1,31 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import { criarGatePush } from '../navGate';
 
 // Gate de navegação do push (T8 #46), testado puro: resolução da rota (§4.5),
 // dedupe por identifier, e hold/flush até poder navegar (cold start deslogado).
 
 function toque(identifier: string, data: Record<string, unknown>) {
-  return { notification: { request: { identifier, content: { data } } } } as never;
+  return {
+    notification: { request: { identifier, content: { data } } },
+  } as never;
 }
 
 describe('criarGatePush — resolução até a rota (§4.5)', () => {
   it('logado e pronto: toque devolve a rota resolvida pelo tipo', () => {
     const gate = criarGatePush();
-    expect(gate.aoTocar(toque('n1', { tipo: 'pedido_ajuda', pedido_id: 'pd1' }), true)).toBe(
-      '/pedido/pd1'
-    );
+    expect(
+      gate.aoTocar(
+        toque('n1', { tipo: 'pedido_ajuda', pedido_id: 'pd1' }),
+        true,
+      ),
+    ).toBe('/pedido/pd1');
   });
 
   it('tipo desconhecido: descarta (null), não segura', () => {
     const gate = criarGatePush();
-    expect(gate.aoTocar(toque('n1', { tipo: 'xpto', ponto_id: 'p1' }), false)).toBeNull();
+    expect(
+      gate.aoTocar(toque('n1', { tipo: 'xpto', ponto_id: 'p1' }), false),
+    ).toBeNull();
     // Nada ficou pendente para dar flush.
     expect(gate.aoFicarPronto(true)).toBeNull();
   });
@@ -50,7 +57,12 @@ describe('criarGatePush — hold e flush', () => {
   it('cold start deslogado: segura o toque e faz flush quando pronto/logado', () => {
     const gate = criarGatePush();
     // Deslogado / nav não pronta: segura (não navega ainda).
-    expect(gate.aoTocar(toque('cold', { tipo: 'pedido_ajuda', pedido_id: 'pd9' }), false)).toBeNull();
+    expect(
+      gate.aoTocar(
+        toque('cold', { tipo: 'pedido_ajuda', pedido_id: 'pd9' }),
+        false,
+      ),
+    ).toBeNull();
     // Ainda não pronto: flush não libera.
     expect(gate.aoFicarPronto(false)).toBeNull();
     // Login + nav prontos: flush navega ao alvo segurado.
@@ -61,8 +73,18 @@ describe('criarGatePush — hold e flush', () => {
 
   it('segura o último toque enquanto não pode navegar', () => {
     const gate = criarGatePush();
-    expect(gate.aoTocar(toque('a', { tipo: 'ponto_vencido', ponto_id: 'p1' }), false)).toBeNull();
-    expect(gate.aoTocar(toque('b', { tipo: 'ponto_vencido', ponto_id: 'p2' }), false)).toBeNull();
+    expect(
+      gate.aoTocar(
+        toque('a', { tipo: 'ponto_vencido', ponto_id: 'p1' }),
+        false,
+      ),
+    ).toBeNull();
+    expect(
+      gate.aoTocar(
+        toque('b', { tipo: 'ponto_vencido', ponto_id: 'p2' }),
+        false,
+      ),
+    ).toBeNull();
     // O último toque segurado é o que abre no flush.
     expect(gate.aoFicarPronto(true)).toBe('/ponto/p2');
   });

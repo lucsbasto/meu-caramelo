@@ -28,7 +28,7 @@ function ensureConfigured(): void {
 export async function signInWithGoogle(): Promise<void> {
   if (!isGoogleConfigured) {
     throw new Error(
-      'Login com Google indisponível no momento. Use o link por e-mail.'
+      'Login com Google indisponível no momento. Use o link por e-mail.',
     );
   }
 

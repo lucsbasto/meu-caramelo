@@ -2,13 +2,7 @@
 // silhueta de cão ao lado de uma tigela, skyline simples ao fundo e duas patas
 // decorativas de baixa opacidade. Nada de foto de banco de imagens — o argumento
 // da tela é que este é o bairro da pessoa (§6.1 Regras).
-import Svg, {
-  Path,
-  Rect,
-  Circle,
-  Ellipse,
-  G,
-} from 'react-native-svg';
+import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { colors } from '@/theme';
 
 // Uma pata estilizada: coxim central + quatro dedos. Reusada nas decorativas.
@@ -74,7 +68,15 @@ export function IlustracaoOnboarding({ width }: { width: number }) {
       </G>
 
       {/* Chão. */}
-      <Rect x={0} y={156} width={320} height={6} rx={3} fill={claro} opacity={0.5} />
+      <Rect
+        x={0}
+        y={156}
+        width={320}
+        height={6}
+        rx={3}
+        fill={claro}
+        opacity={0.5}
+      />
 
       {/* Tigela. */}
       <G>
@@ -83,7 +85,14 @@ export function IlustracaoOnboarding({ width }: { width: number }) {
           fill={claro}
         />
         <Ellipse cx={224} cy={150} rx={28} ry={7} fill={claro} />
-        <Ellipse cx={224} cy={149} rx={20} ry={4.4} fill={escuro} opacity={0.45} />
+        <Ellipse
+          cx={224}
+          cy={149}
+          rx={20}
+          ry={4.4}
+          fill={escuro}
+          opacity={0.45}
+        />
       </G>
 
       {/* Silhueta do cão (caramelo de rua), sentado, olhando a tigela. */}

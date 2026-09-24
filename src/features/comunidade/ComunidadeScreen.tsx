@@ -1,6 +1,9 @@
 // Aba Comunidade — feed por proximidade (§6.8). Cabeçalho + chips de escopo +
 // lista cronológica com três formatos de cartão, realtime de pedidos, estados
 // de vazio/carregando e parede de login para ações de visitante.
+
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,23 +18,20 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
-
-import { colors, fonts, radii, spacing, touch } from '@/theme';
-import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { useAuth } from '@/features/auth/session';
+import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { CENTRO_PADRAO } from '@/features/mapa/MapaScreen';
 import type { Centro } from '@/features/mapa/usePontos';
-import { useFeed } from './useFeed';
-import { useCobrirPedido } from './usePedidoAjuda';
-import { mensagemErroCobrir } from './pedidoAjuda';
+import { colors, fonts, radii, spacing, touch } from '@/theme';
 import {
+  type EscopoFeed,
   formatarTempoFeed,
   fraseEvento,
-  type EscopoFeed,
   type ItemFeed,
 } from './feed';
+import { mensagemErroCobrir } from './pedidoAjuda';
+import { useFeed } from './useFeed';
+import { useCobrirPedido } from './usePedidoAjuda';
 
 const CHIPS: { escopo: EscopoFeed; rotulo: string }[] = [
   { escopo: 'perto', rotulo: 'Perto de mim' },
@@ -81,7 +81,12 @@ export default function ComunidadeScreen() {
 
   function onRegistrar() {
     // Estado vazio de "Perto de mim": leva a registrar (§6.8 Estados).
-    if (!requireAuth('Para registrar uma alimentação, entre na sua conta.', '/feed')) {
+    if (
+      !requireAuth(
+        'Para registrar uma alimentação, entre na sua conta.',
+        '/feed',
+      )
+    ) {
       return;
     }
     router.push('/');
@@ -104,7 +109,12 @@ export default function ComunidadeScreen() {
   // Coração e comentários plenos vivem no detalhe do registro (§6.10): a ação
   // exige login (parede de §7.1) e abre a tela onde se reage e comenta.
   function onInteragir(item: ItemFeed) {
-    if (!requireAuth('Para reagir e comentar, entre na sua conta.', `/registro/${item.id}`)) {
+    if (
+      !requireAuth(
+        'Para reagir e comentar, entre na sua conta.',
+        `/registro/${item.id}`,
+      )
+    ) {
       return;
     }
     abrirRegistro(item);
@@ -128,14 +138,17 @@ export default function ComunidadeScreen() {
           onPress: () =>
             cobrir.mutate(item.id, {
               onSuccess: () => {
-                Alert.alert('Combinado!', 'Avisamos quem pediu. Obrigado por cobrir.');
+                Alert.alert(
+                  'Combinado!',
+                  'Avisamos quem pediu. Obrigado por cobrir.',
+                );
               },
               onError: (erro) => {
                 Alert.alert('Não deu para cobrir', mensagemErroCobrir(erro));
               },
             }),
         },
-      ]
+      ],
     );
   }
 
@@ -224,7 +237,10 @@ function useCentroAtual(): Centro | null {
       try {
         const pos = await Location.getLastKnownPositionAsync();
         if (!vivo) return;
-        const c = pos && { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const c = pos && {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
         if (!c || (Math.abs(c.lat) < 1 && Math.abs(c.lng) < 1)) {
           setCentro(CENTRO_PADRAO);
           return;
@@ -404,7 +420,10 @@ function CartaoPedido({
           onPress={onVerPonto}
           accessibilityRole="button"
           accessibilityLabel="Ver ponto"
-          style={({ pressed }) => [styles.botaoVerPonto, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.botaoVerPonto,
+            pressed && styles.pressed,
+          ]}
         >
           <Text style={styles.botaoVerPontoTexto}>Ver ponto</Text>
         </Pressable>
@@ -413,7 +432,13 @@ function CartaoPedido({
   );
 }
 
-function CartaoEvento({ item, onAbrir }: { item: ItemFeed; onAbrir: () => void }) {
+function CartaoEvento({
+  item,
+  onAbrir,
+}: {
+  item: ItemFeed;
+  onAbrir: () => void;
+}) {
   return (
     <Pressable
       onPress={onAbrir}
@@ -422,7 +447,9 @@ function CartaoEvento({ item, onAbrir }: { item: ItemFeed; onAbrir: () => void }
       <Avatar url={item.autorAvatarUrl} size={32} />
       <Text style={styles.eventoTexto} numberOfLines={2}>
         {fraseEvento(item)}
-        <Text style={styles.eventoTempo}>{`  ·  ${formatarTempoFeed(item.criadoEm)}`}</Text>
+        <Text
+          style={styles.eventoTempo}
+        >{`  ·  ${formatarTempoFeed(item.criadoEm)}`}</Text>
       </Text>
     </Pressable>
   );
@@ -533,7 +560,9 @@ function Vazio({
   if (escopo === 'seguindo') {
     return (
       <View style={styles.vazio}>
-        <Text style={styles.vazioTitulo}>Você ainda não segue nenhum ponto</Text>
+        <Text style={styles.vazioTitulo}>
+          Você ainda não segue nenhum ponto
+        </Text>
         <Text style={styles.vazioTexto}>
           Seguir um ponto no mapa traz os registros dele para cá.
         </Text>
@@ -560,12 +589,21 @@ function Vazio({
   );
 }
 
-function BotaoVazio({ rotulo, onPress }: { rotulo: string; onPress: () => void }) {
+function BotaoVazio({
+  rotulo,
+  onPress,
+}: {
+  rotulo: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.botaoVazio, pressed && styles.botaoCobrirPressed]}
+      style={({ pressed }) => [
+        styles.botaoVazio,
+        pressed && styles.botaoCobrirPressed,
+      ]}
     >
       <Text style={styles.botaoVazioTexto}>{rotulo}</Text>
     </Pressable>
@@ -591,7 +629,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
-  tituloCabecalho: { fontFamily: fonts.title, fontSize: 26, color: colors.text },
+  tituloCabecalho: {
+    fontFamily: fonts.title,
+    fontSize: 26,
+    color: colors.text,
+  },
   sino: {
     width: touch.min,
     height: touch.min,
@@ -617,10 +659,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipAtivo: { backgroundColor: colors.caramelo, borderColor: colors.caramelo },
-  chipTexto: { fontFamily: fonts.body, fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  chipTexto: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
   chipTextoAtivo: { color: colors.onDark },
 
-  lista: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  lista: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
+  },
 
   cartao: {
     backgroundColor: colors.surface,
@@ -653,10 +704,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.alerta,
   },
 
-  cabecalhoAutor: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  cabecalhoAutor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   autorInfo: { flex: 1, gap: 2 },
-  autorNome: { fontFamily: fonts.body, fontSize: 14, fontWeight: '700', color: colors.text },
-  autorMeta: { fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
+  autorNome: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  autorMeta: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
 
   selo: {
     flexDirection: 'row',
@@ -669,13 +733,27 @@ const styles = StyleSheet.create({
   seloPonto: { width: 7, height: 7, borderRadius: 4 },
   seloTexto: { fontFamily: fonts.body, fontSize: 11, fontWeight: '700' },
 
-  texto: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textSecondary },
-  foto: { width: '100%', height: 118, borderRadius: radii.control, backgroundColor: colors.border },
+  texto: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
+  foto: {
+    width: '100%',
+    height: 118,
+    borderRadius: radii.control,
+    backgroundColor: colors.border,
+  },
 
   acoes: { flexDirection: 'row', gap: spacing.xl, paddingTop: spacing.xs },
   acao: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   acaoIcone: { fontSize: 18, color: colors.textSecondary },
-  acaoContador: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
+  acaoContador: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
 
   botoesPedido: { flexDirection: 'row', gap: spacing.sm },
   botaoCobrir: {
@@ -687,7 +765,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   botaoCobrirPressed: { backgroundColor: colors.carameloPressed },
-  botaoCobrirTexto: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.onDark },
+  botaoCobrirTexto: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.onDark,
+  },
   botaoVerPonto: {
     flex: 1,
     minHeight: touch.min,
@@ -697,9 +780,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  botaoVerPontoTexto: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.text },
+  botaoVerPontoTexto: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
 
-  eventoTexto: { flex: 1, fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
+  eventoTexto: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   eventoTempo: { color: colors.textTertiary },
 
   avatarFallback: {
@@ -709,7 +802,11 @@ const styles = StyleSheet.create({
   },
   skelAvatar: { width: 40, height: 40, borderRadius: 20 },
   skelLinha: { height: 10, borderRadius: 5, backgroundColor: colors.border },
-  skelBloco: { height: 60, borderRadius: radii.control, backgroundColor: colors.border },
+  skelBloco: {
+    height: 60,
+    borderRadius: radii.control,
+    backgroundColor: colors.border,
+  },
 
   vazio: {
     flex: 1,
@@ -718,7 +815,12 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.sm,
   },
-  vazioTitulo: { fontFamily: fonts.title, fontSize: 18, color: colors.text, textAlign: 'center' },
+  vazioTitulo: {
+    fontFamily: fonts.title,
+    fontSize: 18,
+    color: colors.text,
+    textAlign: 'center',
+  },
   vazioTexto: {
     fontFamily: fonts.body,
     fontSize: 14,
@@ -735,5 +837,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  botaoVazioTexto: { fontFamily: fonts.body, fontSize: 15, fontWeight: '600', color: colors.onDark },
+  botaoVazioTexto: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.onDark,
+  },
 });

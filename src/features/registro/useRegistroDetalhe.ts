@@ -1,23 +1,24 @@
 // Queries + mutações do detalhe do registro (§6.10) + realtime: INSERT/DELETE
 // em `comentarios`/`reacoes` filtrado por registro_id invalida o que depende.
-import { useEffect } from 'react';
+
 import {
+  type QueryClient,
   useMutation,
   useQuery,
   useQueryClient,
-  type QueryClient,
 } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import type { TablesInsert } from '@/lib/database.types';
+import { useEffect } from 'react';
 // Reusa a classe do ponto (§6.10 / #19): uma só classe evita que `instanceof`
 // falhe entre módulos. Re-exportada para a tela importar de um lugar só.
 import { RegistroNaoRemovidoError } from '@/features/ponto/usePontoDetalhe';
+import type { TablesInsert } from '@/lib/database.types';
+import { supabase } from '@/lib/supabase';
 import {
-  normalizarComentario,
-  normalizarRegistroDetalhe,
   type Comentario,
   type ComentarioRow,
   type EstadoReacao,
+  normalizarComentario,
+  normalizarRegistroDetalhe,
   type RegistroDetalhe,
   type RegistroDetalheRow,
 } from './dados';
@@ -38,7 +39,7 @@ async function buscarRegistro(id: string): Promise<RegistroDetalhe | null> {
   const { data, error } = await supabase
     .from('registros')
     .select(
-      'id, ponto_id, user_id, criado_em, caes, gatos, quantidade_kg, observacao, foto_url, tipos, profiles(nome, avatar_url), pontos(nome)'
+      'id, ponto_id, user_id, criado_em, caes, gatos, quantidade_kg, observacao, foto_url, tipos, profiles(nome, avatar_url), pontos(nome)',
     )
     .eq('id', id)
     .maybeSingle();
@@ -49,7 +50,9 @@ async function buscarRegistro(id: string): Promise<RegistroDetalhe | null> {
 async function buscarComentarios(id: string): Promise<Comentario[]> {
   const { data, error } = await supabase
     .from('comentarios')
-    .select('id, registro_id, autor_id, texto, criado_em, profiles(nome, avatar_url)')
+    .select(
+      'id, registro_id, autor_id, texto, criado_em, profiles(nome, avatar_url)',
+    )
     .eq('registro_id', id)
     .order('criado_em', { ascending: true });
   if (error) throw error;
@@ -59,7 +62,10 @@ async function buscarComentarios(id: string): Promise<Comentario[]> {
 // Sem coluna de contagem em `reacoes` — o volume do piloto é pequeno (mesma
 // instrução das estatísticas do ponto), então conta no cliente e deriva se o
 // usuário atual reagiu na mesma leitura.
-async function buscarReacoes(id: string, userId: string | null): Promise<EstadoReacao> {
+async function buscarReacoes(
+  id: string,
+  userId: string | null,
+): Promise<EstadoReacao> {
   const { data, error } = await supabase
     .from('reacoes')
     .select('user_id')
@@ -103,18 +109,33 @@ export function useRegistroDetalhe(id: string, userId: string | null) {
       .channel(`registro:${id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'comentarios', filter: `registro_id=eq.${id}` },
-        invalidarComentarios
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comentarios',
+          filter: `registro_id=eq.${id}`,
+        },
+        invalidarComentarios,
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'reacoes', filter: `registro_id=eq.${id}` },
-        invalidarReacoes
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reacoes',
+          filter: `registro_id=eq.${id}`,
+        },
+        invalidarReacoes,
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'registros', filter: `id=eq.${id}` },
-        invalidarRegistro
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'registros',
+          filter: `id=eq.${id}`,
+        },
+        invalidarRegistro,
       )
       .subscribe();
 
@@ -180,7 +201,13 @@ export function useComentar(id: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, texto }: { userId: string; texto: string }) => {
+    mutationFn: async ({
+      userId,
+      texto,
+    }: {
+      userId: string;
+      texto: string;
+    }) => {
       const row: TablesInsert<'comentarios'> = {
         registro_id: id,
         autor_id: userId,

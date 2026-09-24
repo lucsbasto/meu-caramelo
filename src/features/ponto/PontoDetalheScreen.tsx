@@ -1,5 +1,8 @@
 // Tela de detalhe do ponto (§6.4): cabeçalho visual, painel branco com
 // estatísticas/mantenedor/últimos registros, e barra de ação fixa.
+
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,29 +22,30 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
-
-import { colors, fonts, radii, spacing, statusColor, touch } from '@/theme';
-import { distanciaMetros, formatarDistancia, rotuloStatus } from '@/features/mapa/pontos';
+import { abbreviateName } from '@/features/auth/abbreviate';
 import { useAuth } from '@/features/auth/session';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
-import { abbreviateName } from '@/features/auth/abbreviate';
+import {
+  distanciaMetros,
+  formatarDistancia,
+  rotuloStatus,
+} from '@/features/mapa/pontos';
+import { colors, fonts, radii, spacing, statusColor, touch } from '@/theme';
 import {
   formatarConteudoRegistro,
   formatarDesde,
   formatarTempoRegistro,
-  podeRemoverRegistro,
   type Mantenedor,
   type PontoDetalhe,
   type PontoFoto,
+  podeRemoverRegistro,
   type RegistroPonto,
 } from './dados';
 import {
   ConcurrentAdoptionError,
   useAdoptPoint,
-  useRemoverRegistro,
   usePontoDetalhe,
+  useRemoverRegistro,
 } from './usePontoDetalhe';
 import { useSeguir } from './useSeguir';
 
@@ -55,7 +59,8 @@ export function PontoDetalheScreen({ id }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const requireAuth = useRequireAuth();
-  const { ponto, fotos, mantenedores, registros, estatisticas } = usePontoDetalhe(id);
+  const { ponto, fotos, mantenedores, registros, estatisticas } =
+    usePontoDetalhe(id);
   const seguir = useSeguir(id, user?.id ?? null);
   const removerRegistro = useRemoverRegistro(id);
   const adopt = useAdoptPoint(id);
@@ -78,14 +83,21 @@ export function PontoDetalheScreen({ id }: Props) {
   }
 
   const p = ponto.data;
-  const distanciaM = minhaLocalizacao ? distanciaMetros(minhaLocalizacao, p) : null;
+  const distanciaM = minhaLocalizacao
+    ? distanciaMetros(minhaLocalizacao, p)
+    : null;
 
   function onVoltar() {
     router.back();
   }
 
   function onSeguir() {
-    if (!requireAuth('Para seguir este ponto e receber avisos, entre na sua conta.', `/ponto/${id}`)) {
+    if (
+      !requireAuth(
+        'Para seguir este ponto e receber avisos, entre na sua conta.',
+        `/ponto/${id}`,
+      )
+    ) {
       return;
     }
     seguir.toggle();
@@ -104,7 +116,12 @@ export function PontoDetalheScreen({ id }: Props) {
   }
 
   function onRegistrar() {
-    if (!requireAuth('Para registrar uma alimentação, entre na sua conta.', `/ponto/${id}`)) {
+    if (
+      !requireAuth(
+        'Para registrar uma alimentação, entre na sua conta.',
+        `/ponto/${id}`,
+      )
+    ) {
       return;
     }
     router.push(`/ponto/${id}/registrar`);
@@ -129,7 +146,7 @@ export function PontoDetalheScreen({ id }: Props) {
     if (
       !requireAuth(
         'Para adotar este ponto e virar o mantenedor, entre na sua conta.',
-        `/ponto/${id}`
+        `/ponto/${id}`,
       )
     ) {
       return;
@@ -147,7 +164,10 @@ export function PontoDetalheScreen({ id }: Props) {
           onPress: () =>
             adopt.mutate(userId, {
               onSuccess: () => {
-                Alert.alert('Pronto!', 'Você agora é o mantenedor deste ponto.');
+                Alert.alert(
+                  'Pronto!',
+                  'Você agora é o mantenedor deste ponto.',
+                );
               },
               onError: async (err) => {
                 if (err instanceof ConcurrentAdoptionError) {
@@ -155,11 +175,14 @@ export function PontoDetalheScreen({ id }: Props) {
                   // race; never show a technical error.
                   const { data } = await mantenedores.refetch();
                   const list = data ?? [];
-                  const principal = list.find((m) => m.papel === 'principal') ?? list[0];
-                  const name = principal ? abbreviateName(principal.nome) : 'outra pessoa';
+                  const principal =
+                    list.find((m) => m.papel === 'principal') ?? list[0];
+                  const name = principal
+                    ? abbreviateName(principal.nome)
+                    : 'outra pessoa';
                   Alert.alert(
                     'Ponto já adotado',
-                    `Este ponto acabou de ser adotado por ${name}.`
+                    `Este ponto acabou de ser adotado por ${name}.`,
                   );
                   return;
                 }
@@ -167,7 +190,7 @@ export function PontoDetalheScreen({ id }: Props) {
               },
             }),
         },
-      ]
+      ],
     );
   }
 
@@ -185,7 +208,7 @@ export function PontoDetalheScreen({ id }: Props) {
             onError: () =>
               Alert.alert(
                 'Este registro foi removido',
-                'Ele pode já ter sido removido por outra pessoa.'
+                'Ele pode já ter sido removido por outra pessoa.',
               ),
           }),
       },
@@ -240,9 +263,14 @@ export function PontoDetalheScreen({ id }: Props) {
 
           {p.mantenedorId ? (
             mantenedores.isError ? (
-              <Text style={styles.secaoErro}>Não deu para carregar quem mantém este ponto.</Text>
+              <Text style={styles.secaoErro}>
+                Não deu para carregar quem mantém este ponto.
+              </Text>
             ) : mantenedores.isLoading ? (
-              <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.sm }} />
+              <ActivityIndicator
+                color={colors.caramelo}
+                style={{ marginVertical: spacing.sm }}
+              />
             ) : (
               <CartaoMantenedor
                 mantenedores={mantenedores.data ?? []}
@@ -313,7 +341,9 @@ function abrirComoChegar(lat: number, lng: number) {
     default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
   });
   if (url) {
-    Linking.openURL(url).catch(() => Alert.alert('Não foi possível abrir o mapa'));
+    Linking.openURL(url).catch(() =>
+      Alert.alert('Não foi possível abrir o mapa'),
+    );
   }
 }
 
@@ -364,7 +394,10 @@ function Cabecalho({
           <BotaoCirculo aria="Pedir ajuda" onPress={onPedirAjuda}>
             <Text style={styles.iconeBotao}>🙋</Text>
           </BotaoCirculo>
-          <BotaoCirculo aria={seguindo ? 'Deixar de seguir' : 'Seguir'} onPress={onSeguir}>
+          <BotaoCirculo
+            aria={seguindo ? 'Deixar de seguir' : 'Seguir'}
+            onPress={onSeguir}
+          >
             <Text style={[styles.iconeBotao, seguindo && styles.iconeSeguindo]}>
               {seguindo ? '♥' : '♡'}
             </Text>
@@ -395,7 +428,10 @@ function CarrosselFotos({ imagens }: { imagens: string[] }) {
       // precisam ser puros); o índice corrente vem do ref.
       const proximo = (indiceRef.current + 1) % imagens.length;
       indiceRef.current = proximo;
-      listaRef.current?.scrollToOffset({ offset: proximo * width, animated: true });
+      listaRef.current?.scrollToOffset({
+        offset: proximo * width,
+        animated: true,
+      });
       setIndice(proximo);
     }, 2000);
     return () => clearInterval(timer);
@@ -427,7 +463,10 @@ function CarrosselFotos({ imagens }: { imagens: string[] }) {
         onScrollEndDrag={aoParar}
         onMomentumScrollEnd={aoParar}
         renderItem={({ item }) => (
-          <Image source={{ uri: item }} style={{ width, height: ALTURA_CABECALHO }} />
+          <Image
+            source={{ uri: item }}
+            style={{ width, height: ALTURA_CABECALHO }}
+          />
         )}
       />
 
@@ -466,7 +505,10 @@ function BotaoCirculo({
       accessibilityRole="button"
       accessibilityLabel={aria}
       onPress={onPress}
-      style={({ pressed }) => [styles.botaoCirculo, pressed && styles.botaoCirculoPressed]}
+      style={({ pressed }) => [
+        styles.botaoCirculo,
+        pressed && styles.botaoCirculoPressed,
+      ]}
     >
       {children}
     </Pressable>
@@ -475,8 +517,12 @@ function BotaoCirculo({
 
 function SeloStatus({ status }: { status: PontoDetalhe['status'] }) {
   return (
-    <View style={[styles.selo, { backgroundColor: `${statusColor[status]}22` }]}>
-      <View style={[styles.seloPonto, { backgroundColor: statusColor[status] }]} />
+    <View
+      style={[styles.selo, { backgroundColor: `${statusColor[status]}22` }]}
+    >
+      <View
+        style={[styles.seloPonto, { backgroundColor: statusColor[status] }]}
+      />
       <Text style={[styles.seloTexto, { color: statusColor[status] }]}>
         {rotuloStatus[status]}
       </Text>
@@ -497,7 +543,8 @@ function Estatisticas({
   carregando: boolean;
   erro: boolean;
 }) {
-  const valorHoras = horasDesdeUltima == null ? '—' : `${Math.floor(horasDesdeUltima)} h`;
+  const valorHoras =
+    horasDesdeUltima == null ? '—' : `${Math.floor(horasDesdeUltima)} h`;
   // "…" carregando, "erro" falha de rede, "—" sem dado — três estados distintos
   const valorMes = (valor: number | null) =>
     erro ? 'erro' : carregando ? '…' : valor == null ? '—' : String(valor);
@@ -513,7 +560,13 @@ function Estatisticas({
   );
 }
 
-function CartaoEstatistica({ valor, rotulo }: { valor: string; rotulo: string }) {
+function CartaoEstatistica({
+  valor,
+  rotulo,
+}: {
+  valor: string;
+  rotulo: string;
+}) {
   return (
     <View style={styles.cartaoEstatistica}>
       <Text style={styles.cartaoEstatisticaValor}>{valor}</Text>
@@ -533,20 +586,26 @@ function CartaoMantenedor({
   onPress: () => void;
   onEditar: () => void;
 }) {
-  const principal = mantenedores.find((m) => m.papel === 'principal') ?? mantenedores[0];
+  const principal =
+    mantenedores.find((m) => m.papel === 'principal') ?? mantenedores[0];
   if (!principal) return null;
 
   // "Você" é do principal; já editar pode qualquer mantenedor/co-mantenedor (§6.6).
   const souOPrincipal = usuarioId != null && principal.userId === usuarioId;
   const souMantenedor =
     usuarioId != null && mantenedores.some((m) => m.userId === usuarioId);
-  const coMantenedores = mantenedores.filter((m) => m.userId !== principal.userId);
+  const coMantenedores = mantenedores.filter(
+    (m) => m.userId !== principal.userId,
+  );
   const nomeExibido = souOPrincipal ? 'Você' : abbreviateName(principal.nome);
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.cartaoMantenedor, pressed && styles.cartaoPressed]}
+      style={({ pressed }) => [
+        styles.cartaoMantenedor,
+        pressed && styles.cartaoPressed,
+      ]}
     >
       <View style={styles.avatarComCoroa}>
         <Avatar url={principal.avatarUrl} size={46} />
@@ -588,10 +647,14 @@ function BlocoAdocao() {
         <View style={styles.adoptionCrown}>
           <Text style={styles.adoptionCrownEmoji}>👑</Text>
         </View>
-        <Text style={styles.blocoAdocaoTitulo}>Este ponto não tem mantenedor</Text>
+        <Text style={styles.blocoAdocaoTitulo}>
+          Este ponto não tem mantenedor
+        </Text>
       </View>
 
-      <Text style={styles.blocoAdocaoTexto}>Quem adota vira o rosto do ponto e pode:</Text>
+      <Text style={styles.blocoAdocaoTexto}>
+        Quem adota vira o rosto do ponto e pode:
+      </Text>
 
       <View style={styles.adoptionItems}>
         <AdoptionItem text="editar nome, endereço e fotos" />
@@ -640,9 +703,14 @@ function RegistrosSecao({
       </View>
 
       {carregando ? (
-        <ActivityIndicator color={colors.caramelo} style={{ marginVertical: spacing.lg }} />
+        <ActivityIndicator
+          color={colors.caramelo}
+          style={{ marginVertical: spacing.lg }}
+        />
       ) : erro ? (
-        <Text style={styles.secaoErro}>Não deu para carregar os registros.</Text>
+        <Text style={styles.secaoErro}>
+          Não deu para carregar os registros.
+        </Text>
       ) : registros.length === 0 ? (
         <Text style={styles.registrosVazio}>
           Ninguém registrou aqui ainda. Se você alimentar, será o primeiro.
@@ -683,10 +751,16 @@ function LinhaRegistro({
     >
       <Avatar url={registro.autorAvatarUrl} size={36} />
       <View style={styles.linhaRegistroInfo}>
-        <Text style={styles.linhaRegistroNome}>{abbreviateName(registro.autorNome)}</Text>
-        <Text style={styles.linhaRegistroConteudo}>{formatarConteudoRegistro(registro)}</Text>
+        <Text style={styles.linhaRegistroNome}>
+          {abbreviateName(registro.autorNome)}
+        </Text>
+        <Text style={styles.linhaRegistroConteudo}>
+          {formatarConteudoRegistro(registro)}
+        </Text>
       </View>
-      <Text style={styles.linhaRegistroTempo}>{formatarTempoRegistro(registro.criadoEm)}</Text>
+      <Text style={styles.linhaRegistroTempo}>
+        {formatarTempoRegistro(registro.criadoEm)}
+      </Text>
       {/* Ação visível só para autor/mantenedor (§6.10); a RLS é a autoridade
           final, mas a UI só oferece o toque a quem pode. */}
       {podeRemover ? (
@@ -695,7 +769,10 @@ function LinhaRegistro({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Remover registro de ${abbreviateName(registro.autorNome)}`}
-          style={({ pressed }) => [styles.botaoRemover, pressed && styles.cartaoPressed]}
+          style={({ pressed }) => [
+            styles.botaoRemover,
+            pressed && styles.cartaoPressed,
+          ]}
         >
           <Text style={styles.botaoRemoverIcone}>🗑</Text>
         </Pressable>
@@ -746,13 +823,18 @@ function BarraAcao({
   const adoptionMode = orphan && ativo;
 
   return (
-    <View style={[styles.barraAcao, { paddingBottom: insets.bottom + spacing.md }]}>
+    <View
+      style={[styles.barraAcao, { paddingBottom: insets.bottom + spacing.md }]}
+    >
       {adoptionMode ? (
         <Pressable
           onPress={onRegistrar}
           accessibilityRole="button"
           accessibilityLabel="Registrar alimentação"
-          style={({ pressed }) => [styles.botaoComoChegar, pressed && styles.cartaoPressed]}
+          style={({ pressed }) => [
+            styles.botaoComoChegar,
+            pressed && styles.cartaoPressed,
+          ]}
         >
           <Text style={styles.squareButtonIcon}>🍲</Text>
           <Text style={styles.botaoComoChegarTexto}>registrar</Text>
@@ -761,7 +843,10 @@ function BarraAcao({
         <Pressable
           onPress={onComoChegar}
           accessibilityRole="button"
-          style={({ pressed }) => [styles.botaoComoChegar, pressed && styles.cartaoPressed]}
+          style={({ pressed }) => [
+            styles.botaoComoChegar,
+            pressed && styles.cartaoPressed,
+          ]}
         >
           <Text style={styles.botaoComoChegarTexto}>Como{'\n'}chegar</Text>
         </Pressable>
@@ -782,7 +867,7 @@ function BarraAcao({
           {adopting ? (
             <ActivityIndicator color={colors.onDark} />
           ) : (
-            <Text style={styles.botaoRegistrarTexto}>👑  Adotar este ponto</Text>
+            <Text style={styles.botaoRegistrarTexto}>👑 Adotar este ponto</Text>
           )}
         </Pressable>
       ) : ativo ? (
@@ -811,7 +896,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     padding: spacing.xl,
   },
-  erroTexto: { fontFamily: fonts.body, fontSize: 15, color: colors.textSecondary },
+  erroTexto: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
 
   cabecalho: { height: ALTURA_CABECALHO, backgroundColor: colors.border },
   cabecalhoFoto: { width: '100%', height: '100%' },
@@ -878,8 +967,17 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.lg,
   },
-  linhaTitulo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  titulo: { flex: 1, fontFamily: fonts.title, fontSize: 25, color: colors.text },
+  linhaTitulo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  titulo: {
+    flex: 1,
+    fontFamily: fonts.title,
+    fontSize: 25,
+    color: colors.text,
+  },
   selo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -920,7 +1018,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xs,
   },
-  cartaoEstatisticaValor: { fontFamily: fonts.title, fontSize: 20, color: colors.text },
+  cartaoEstatisticaValor: {
+    fontFamily: fonts.title,
+    fontSize: 20,
+    color: colors.text,
+  },
   cartaoEstatisticaRotulo: {
     fontFamily: fonts.body,
     fontSize: 11,
@@ -953,7 +1055,11 @@ const styles = StyleSheet.create({
     color: colors.textWeak,
   },
   mantenedorNome: { fontFamily: fonts.title, fontSize: 16, color: colors.text },
-  mantenedorDesde: { fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
+  mantenedorDesde: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
   iconeSeta: { fontSize: 22, color: colors.textWeak },
   iconeEditar: { fontSize: 18, color: colors.caramelo },
 
@@ -975,7 +1081,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   adoptionCrownEmoji: { fontSize: 20 },
-  blocoAdocaoTitulo: { flex: 1, fontFamily: fonts.title, fontSize: 16, color: colors.text },
+  blocoAdocaoTitulo: {
+    flex: 1,
+    fontFamily: fonts.title,
+    fontSize: 16,
+    color: colors.text,
+  },
   blocoAdocaoTexto: {
     fontFamily: fonts.body,
     fontSize: 13,
@@ -1004,7 +1115,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secaoTitulo: { fontFamily: fonts.title, fontSize: 17, color: colors.text },
-  verTudo: { fontFamily: fonts.body, fontSize: 13, fontWeight: '600', color: colors.caramelo },
+  verTudo: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.caramelo,
+  },
   registrosVazio: {
     fontFamily: fonts.body,
     fontSize: 14,
@@ -1025,11 +1141,27 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.md,
   },
-  linhaRegistroDivisoria: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  linhaRegistroDivisoria: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   linhaRegistroInfo: { flex: 1, gap: 2 },
-  linhaRegistroNome: { fontFamily: fonts.body, fontSize: 14, fontWeight: '600', color: colors.text },
-  linhaRegistroConteudo: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
-  linhaRegistroTempo: { fontFamily: fonts.body, fontSize: 12, color: colors.textTertiary },
+  linhaRegistroNome: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  linhaRegistroConteudo: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  linhaRegistroTempo: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
   botaoRemover: {
     width: touch.min,
     height: touch.min,

@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
 import { useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { useAuth } from './session';
 
 type RequireAuth = (reason?: string, next?: string) => boolean;
@@ -25,6 +25,6 @@ export function useRequireAuth(): RequireAuth {
       });
       return false;
     },
-    [session, router]
+    [session, router],
   );
 }

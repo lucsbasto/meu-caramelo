@@ -3,12 +3,12 @@
 // toast leve no topo. Provider único no _layout expõe showToast pelo contexto.
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from 'react';
 import { Animated, Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -56,7 +56,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       }).start();
       timer.current = setTimeout(esconder, DURACAO_MS);
     },
-    [opacidade, esconder]
+    [opacidade, esconder],
   );
 
   useEffect(() => {
@@ -69,7 +69,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {mensagem != null ? (
-        <ToastView mensagem={mensagem} opacidade={opacidade} onPress={esconder} />
+        <ToastView
+          mensagem={mensagem}
+          opacidade={opacidade}
+          onPress={esconder}
+        />
       ) : null}
     </ToastContext.Provider>
   );
@@ -88,7 +92,10 @@ function ToastView({
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={[styles.wrapper, { top: insets.top + spacing.sm, opacity: opacidade }]}
+      style={[
+        styles.wrapper,
+        { top: insets.top + spacing.sm, opacity: opacidade },
+      ]}
     >
       <Pressable
         onPress={onPress}

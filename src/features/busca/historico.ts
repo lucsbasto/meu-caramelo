@@ -2,8 +2,9 @@
 // Persistência em expo-secure-store no mesmo padrão da fila offline
 // (filaOffline.ts): lista curta (~8 itens) por causa do limite ~2 KB do
 // SecureStore no Android. Best-effort — nunca bloqueia a busca se falhar.
-import { useCallback, useEffect, useState } from 'react';
+
 import * as SecureStore from 'expo-secure-store';
+import { useCallback, useEffect, useState } from 'react';
 
 const CHAVE_HISTORICO = 'busca_historico';
 const MAX_ITENS = 8;
@@ -32,7 +33,9 @@ export async function lerHistorico(): Promise<ItemHistorico[]> {
 // Dedup por tipo+id, coloca no topo e limita a MAX_ITENS. Não propaga erro de
 // escrita: histórico é conveniência, não pode derrubar a interação de busca.
 function aplicar(lista: ItemHistorico[], item: ItemHistorico): ItemHistorico[] {
-  const semDup = lista.filter((i) => !(i.tipo === item.tipo && i.id === item.id));
+  const semDup = lista.filter(
+    (i) => !(i.tipo === item.tipo && i.id === item.id),
+  );
   return [item, ...semDup].slice(0, MAX_ITENS);
 }
 
@@ -45,7 +48,7 @@ async function gravarHistorico(lista: ItemHistorico[]): Promise<void> {
 }
 
 export async function adicionarHistorico(
-  item: ItemHistorico
+  item: ItemHistorico,
 ): Promise<ItemHistorico[]> {
   const nova = aplicar(await lerHistorico(), item);
   await gravarHistorico(nova);

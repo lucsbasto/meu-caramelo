@@ -1,10 +1,7 @@
 // Nome exibido = primeiro nome + inicial do sobrenome (§7.6).
 // "Marina Cardoso" -> "Marina C." · "Marina" -> "Marina" · "" -> "".
 export function abbreviateName(full: string | null | undefined): string {
-  const parts = (full ?? '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = (full ?? '').trim().split(/\s+/).filter(Boolean);
 
   if (parts.length === 0) return '';
 

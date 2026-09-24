@@ -1,10 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  type ComentarioRow,
   formatarDataHoraCompleta,
   formatarTempoComentario,
   normalizarComentario,
   normalizarRegistroDetalhe,
-  type ComentarioRow,
   type RegistroDetalheRow,
 } from '../dados';
 
@@ -12,19 +12,27 @@ describe('formatarDataHoraCompleta (§6.10 — absoluta)', () => {
   const agora = new Date('2026-03-12T20:00:00');
 
   it('mesmo dia → "hoje às …"', () => {
-    expect(formatarDataHoraCompleta('2026-03-12T07:10:00', agora)).toBe('hoje às 7h10');
+    expect(formatarDataHoraCompleta('2026-03-12T07:10:00', agora)).toBe(
+      'hoje às 7h10',
+    );
   });
 
   it('dia anterior → "ontem às …"', () => {
-    expect(formatarDataHoraCompleta('2026-03-11T07:10:00', agora)).toBe('ontem às 7h10');
+    expect(formatarDataHoraCompleta('2026-03-11T07:10:00', agora)).toBe(
+      'ontem às 7h10',
+    );
   });
 
   it('mais antigo → "dia de mês às …"', () => {
-    expect(formatarDataHoraCompleta('2026-03-05T18:05:00', agora)).toBe('5 de março às 18h05');
+    expect(formatarDataHoraCompleta('2026-03-05T18:05:00', agora)).toBe(
+      '5 de março às 18h05',
+    );
   });
 
   it('zera minutos com dois dígitos', () => {
-    expect(formatarDataHoraCompleta('2026-03-12T09:00:00', agora)).toBe('hoje às 9h00');
+    expect(formatarDataHoraCompleta('2026-03-12T09:00:00', agora)).toBe(
+      'hoje às 9h00',
+    );
   });
 });
 
@@ -34,13 +42,17 @@ describe('formatarTempoComentario (§6.10 — relativo)', () => {
     expect(formatarTempoComentario('2026-03-12T19:30:00', agora)).toBe('agora');
   });
   it('horas → "há N h"', () => {
-    expect(formatarTempoComentario('2026-03-12T14:00:00', agora)).toBe('há 6 h');
+    expect(formatarTempoComentario('2026-03-12T14:00:00', agora)).toBe(
+      'há 6 h',
+    );
   });
   it('um dia → "ontem"', () => {
     expect(formatarTempoComentario('2026-03-11T14:00:00', agora)).toBe('ontem');
   });
   it('vários dias → "há N dias"', () => {
-    expect(formatarTempoComentario('2026-03-09T14:00:00', agora)).toBe('há 3 dias');
+    expect(formatarTempoComentario('2026-03-09T14:00:00', agora)).toBe(
+      'há 3 dias',
+    );
   });
 });
 
@@ -71,7 +83,11 @@ describe('normalizarRegistroDetalhe', () => {
   it('autor apagado vira "Voluntário removido" e ponto ausente vira "Ponto"', () => {
     // Conta apagada: a autoria fica nula (set null), o histórico do ponto fica
     // e a UI atribui o registro a "Voluntário removido" (§6.13/§7.6).
-    const r = normalizarRegistroDetalhe({ ...base, profiles: null, pontos: null });
+    const r = normalizarRegistroDetalhe({
+      ...base,
+      profiles: null,
+      pontos: null,
+    });
     expect(r.autorNome).toBe('Voluntário removido');
     expect(r.pontoNome).toBe('Ponto');
   });

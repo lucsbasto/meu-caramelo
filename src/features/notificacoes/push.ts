@@ -1,8 +1,8 @@
-import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 
 // Canal Android obrigatório para exibir push com som/heads-up.
@@ -51,7 +51,9 @@ export async function obterExpoPushToken(): Promise<string | null> {
 
 // Registra/atualiza o token do dispositivo em device_tokens para o usuário.
 // Idempotente por causa do upsert com onConflict no token (PK).
-export async function registrarTokenPush(userId: string): Promise<string | null> {
+export async function registrarTokenPush(
+  userId: string,
+): Promise<string | null> {
   const token = await obterExpoPushToken();
   if (!token) return null;
 
@@ -62,7 +64,7 @@ export async function registrarTokenPush(userId: string): Promise<string | null>
       plataforma: Platform.OS,
       atualizado_em: new Date().toISOString(),
     },
-    { onConflict: 'token' }
+    { onConflict: 'token' },
   );
 
   if (error) {
@@ -96,7 +98,9 @@ export async function removerTokenPush(): Promise<void> {
     const id = projectId();
     if (!id) return;
     try {
-      const { data } = await Notifications.getExpoPushTokenAsync({ projectId: id });
+      const { data } = await Notifications.getExpoPushTokenAsync({
+        projectId: id,
+      });
       token = data;
     } catch (e) {
       console.error('[push] erro ao obter token para remoção:', e);
