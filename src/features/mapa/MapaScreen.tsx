@@ -98,6 +98,18 @@ export default function MapaScreen() {
     };
   }, []);
 
+  // defaultSettings da <Camera> só aplica no mount; quando o centro muda (fix do
+  // GPS chega, ou fallback), movemos a câmera imperativamente pelo ref. Sem isto
+  // o mapa fica preso no primeiro enquadramento e ignora a localização real.
+  useEffect(() => {
+    if (!centro) return;
+    cameraRef.current?.setCamera({
+      centerCoordinate: [centro.lng, centro.lat],
+      zoomLevel: 15,
+      animationDuration: 0,
+    });
+  }, [centro]);
+
   const { data: pontos = [], isLoading, isError } = usePontos(centro);
 
   const visiveis = useMemo(
